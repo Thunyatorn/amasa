@@ -1,0 +1,17 @@
+{
+  "name": "payments",
+  "version": "0.0.0",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "dev": "tsx --env-file-if-exists=.env src/server.ts",
+    "link:test": "tsx --env-file=.env src/link-test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@visaacceptance/agent-toolkit": "0.0.96"
+  },
+  "devDependencies": {
+    "tsx": "4.23.15"
+  }
+}

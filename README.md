@@ -15,7 +15,7 @@ shops and asks less over time ("earned autonomy").
 | --- | --- |
 | **M0** Scaffold and first Visa call | ✅ Done: all 5 acceptance checks pass |
 | **M1** Schemas and verifier | ✅ Done: all 3 acceptance checks pass |
-| **M2** Mock store, signed verdict, payments end to end | ✅ Done: all 5 acceptance checks pass (one open Visa question, see M2 below) |
+| **M2** Mock store, signed verdict, payments end to end | ✅ Done: all 5 acceptance checks pass; Visa amount fixed and verified (see M2 fix) |
 | M3–M8 | Not started |
 
 M0 acceptance checks (docs/BUILD_ORDER.md):
@@ -41,7 +41,7 @@ service listens on `127.0.0.1` only, and the web app serves its placeholder page
 
 ```bash
 pnpm install
-pnpm keys          # creates the verifier Ed25519 key pair in the two env files
+pnpm keys          # creates the verifier key pair and SESSION_SECRET in the env files
 ```
 
 Then add your Visa sandbox credentials to `services/payments/.env`. `pnpm keys` has already
@@ -52,7 +52,12 @@ VISA_ACCEPTANCE_MERCHANT_ID=...
 VISA_ACCEPTANCE_API_KEY_ID=...
 VISA_ACCEPTANCE_SECRET_KEY=...
 VISA_ACCEPTANCE_ENVIRONMENT=SANDBOX
+PAYMENTS_MAX_DAILY_CENTS=50000
 ```
+
+`PAYMENTS_MAX_DAILY_CENTS` is the payments service's daily limit in cents ($500.00 here); the service
+refuses to start without it. One demo order is $139.32, so $500.00 allows 3 links per UTC day:
+raise it for rehearsals if needed.
 
 The full list of variables (all of SPEC §19) is in [`.env.example`](.env.example).
 
@@ -61,7 +66,7 @@ The full list of variables (all of SPEC §19) is in [`.env.example`](.env.exampl
 | Command | What it does |
 | --- | --- |
 | `pnpm install` | Installs every workspace package |
-| `pnpm dev` | Runs the web app (Next.js) on http://localhost:3000 |
+| `pnpm dev` | Runs the web app (Next.js) on http://127.0.0.1:3000, reachable only from this machine |
 | `pnpm --filter payments dev` | Runs the payments service on http://127.0.0.1:4100 |
 | `pnpm --filter payments link:test` | Creates one $1.00 SANDBOX payment link and prints the raw response once |
 | `pnpm test` | Runs Vitest across the repo |
@@ -200,7 +205,7 @@ both variables and run `pnpm keys` again to make a new pair.
   files), `data/replay/`, `node_modules/`, `.next/`, `next-env.d.ts`, `*.tsbuildinfo`.
 - `.env.example` lists every variable in SPEC §19. Values are empty except
   `VISA_ACCEPTANCE_ENVIRONMENT=SANDBOX`, `PORT=4100`, `PAYMENTS_URL=http://127.0.0.1:4100`,
-  `STORE_BASE_URL=http://localhost:3000/api/store`, `DEMO_REPLAY=false`, `TAP_ENABLED=false`.
+  `STORE_BASE_URL=http://127.0.0.1:3000/api/store`, `DEMO_REPLAY=false`, `TAP_ENABLED=false`.
 
 ## Findings about `@visaacceptance/agent-toolkit@0.0.96`
 
@@ -216,8 +221,8 @@ These come from reading the published package source. Two of them differ from SP
 | Module format | Not mentioned | The ESM build cannot load its `cybersource-rest-client` dependency (dynamic `require` fails) | `services/payments` is `"type": "commonjs"` and loads the CommonJS build |
 
 Answered by the first real `link:test` run: the link URL is `purchaseInformation.paymentLink`
-(SPEC §20 item 1). Still open: whether tax and shipping should be line items (SPEC §20 item 2;
-the $1.00 test had neither), checked in M2 with the $139.32 order.
+(SPEC §20 item 1). SPEC §20 item 2 was answered in M2: Visa charges only the first line item, so
+the link uses one line priced at the full total (see "M2 fix").
 
 ## Decisions not stated in the docs
 
@@ -344,13 +349,42 @@ rather than by replaying a live request from outside. `pnpm test`: 12 files, 125
   default to localhost values.
 - Autonomy demotion and profile updates after a block or outcome are M5, as planned.
 
-### Open: Visa's stored total (SPEC §20 item 2)
-We send `totalAmount: "139.32"` with two line items, the shoe ($129.00) and "Tax" ($10.32). Visa
-created the link but echoed **`totalAmount: "129"`**, with both line items listed. The hosted page
-renders with JavaScript, so the amount the shopper is actually asked to pay has not been seen yet.
-Either way the charge is not above the signed $139.32 or the $140.00 cap (I3 holds), but if the
-page shows $129.00 the tax is not being collected. Next step: open the link from the e2e run and
-read the total on Visa's page, then decide whether tax goes in a line item or only in `totalAmount`.
+### M2 fix: Visa amount (SPEC §20 item 2 answered) and council findings
+
+**What went wrong.** The first live run signed $139.32 but Visa's hosted page asked for $129.00.
+Sandbox tests (2026-10-17/18) showed Visa Pay by Link charges **only the first line item's unit
+price, once**: it ignores `totalAmount`, quantities and every other line (item + tax line → item
+only; two products → first only; quantity 2 → one unit; tax line first → tax only). A single line
+priced at the full total is charged correctly.
+
+**Fix.**
+- `services/payments/src/visa.ts`: the link has exactly **one line item**, `Amasa order <purchase
+  number>`, quantity 1, priced at the full signed total. The itemized cart goes in the line's
+  description, filtered to the characters Visa accepts (letters, numbers, spaces and
+  `!@#$%?&'(),/_+=.-`; a `;` made Visa reject the request).
+- `services/payments/src/pay.ts` step 10: the link is handed out **only if the amount Visa echoes
+  equals the signed total**; otherwise the payment is marked `failed` (`AMOUNT_MISMATCH`).
+- Live re-run: Visa stored `totalAmount: 139.32` for purchase `L928FHHYZPFXM1Q1`.
+
+**Council review fixes** (a four-model review of M0–M2):
+- The web app listened on every network interface (Next's default `0.0.0.0`), so devices on the
+  same Wi-Fi could reach it. `pnpm dev`/`start` now bind to `127.0.0.1`; verified that the LAN
+  address is refused.
+- Audit: a row marked erased must have exactly `{}` as its payload, so the `erased` flag can no
+  longer hide an edited payload. The chain still has no outside anchor (the receipts in M5 show
+  the head), which is stated in the code.
+- Daily limit (`/pay`) also counts requests still waiting on Visa; the weekly cap counts approved
+  purchases, and its level-2 check now runs in the same transaction that consumes the nonce.
+- Approve builds the payment request before spending the nonce, so a bad stored quote cannot leave
+  a purchase stuck in `approved`. The Visa call has its own 60 s timeout, shorter than the web
+  client's 90 s, so the web side always gets a definite answer.
+- The no-model test now also scans the web app's money path (`lib/pipeline`, `lib/db`, signing,
+  store and payments clients, session).
+- Smaller: strict zod for the payments error reply, a malformed cookie is treated as missing (not a
+  500), the payments log sanitizes the purchase number, README setup lists `PAYMENTS_MAX_DAILY_CENTS`.
+- New tests: Visa request mapping and amount parsing, amount mismatch, in-flight daily limit,
+  level-2 weekly cap on approve (I7), erased-flag tampering, malformed cookie. `pnpm test`: 13 files,
+  136 tests, all passing.
 
 ## Notes
 

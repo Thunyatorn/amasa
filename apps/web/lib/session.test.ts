@@ -19,6 +19,10 @@ describe("session and CSRF (SPEC §5)", () => {
     expect(isValidSession("no-dot", SECRET)).toBe(false);
   });
 
+  it("a malformed cookie is treated as missing, not a crash", () => {
+    expect(() => requireSession(req("amasa_session=%E0%A4%A"))).toThrow(ApiError);
+  });
+
   it("requireSession throws 401 without a valid session", () => {
     expect(() => requireSession(req(""))).toThrow(ApiError);
     expect(() => requireSession(req(`amasa_session=${newSessionValue(SECRET)}`))).not.toThrow();

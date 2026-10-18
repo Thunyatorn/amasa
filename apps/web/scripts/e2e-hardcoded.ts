@@ -6,7 +6,7 @@ import { openDb } from "../lib/db";
 import { saveOptions } from "../lib/db/options";
 import { databasePath } from "../lib/env";
 
-const WEB = process.env.WEB_URL || "http://localhost:3000";
+const WEB = process.env.WEB_URL || "http://127.0.0.1:3000";
 const STORE = process.env.STORE_BASE_URL || `${WEB}/api/store`;
 const dollars = (c: number) => `$${(c / 100).toFixed(2)}`;
 

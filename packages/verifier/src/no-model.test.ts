@@ -4,7 +4,10 @@ import { describe, expect, it } from "vitest";
 
 // SPEC §9.4: the money path never imports the AI SDK. Scans every .ts file in these folders.
 const ROOT = resolve(import.meta.dirname, "../../..");
-const DIRS = ["packages/verifier/src", "packages/schemas/src", "packages/audit/src", "services/payments/src"];
+const DIRS = ["packages/verifier/src", "packages/schemas/src", "packages/audit/src", "services/payments/src",
+  // The web app's money path: models live elsewhere in apps/web (M3/M4), never in these folders.
+  "apps/web/lib/pipeline", "apps/web/lib/db"];
+const FILES = ["apps/web/lib/sign.ts", "apps/web/lib/payments-client.ts", "apps/web/lib/store-client.ts", "apps/web/lib/session.ts"];
 const SELF = resolve(import.meta.filename);
 
 // The two patterns from §9.4, plus bare side-effect imports (`import "ai"`) and dynamic imports
@@ -40,7 +43,7 @@ describe("no-model rule (SPEC §9.4)", () => {
   });
 
   it("no money-path file imports ai or @ai-sdk/*", () => {
-    const files = DIRS.flatMap((d) => tsFiles(join(ROOT, d)));
+    const files = [...DIRS.flatMap((d) => tsFiles(join(ROOT, d))), ...FILES.map((f) => join(ROOT, f))];
     expect(files.length).toBeGreaterThan(0);
     const offenders = files.filter((f) => MODEL_IMPORT.some((p) => p.test(readFileSync(f, "utf8"))));
     expect(offenders.map((f) => relative(ROOT, f))).toEqual([]);

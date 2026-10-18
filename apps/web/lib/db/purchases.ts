@@ -22,10 +22,11 @@ export function transitionPurchase(db: Db, purchaseNumber: string, from: Purchas
     .run(to, paymentLinkUrl ?? null, purchaseNumber, from).changes === 1;
 }
 
-// Rolling 7-day spend in a category: links created, kept or returned (for WEEKLY_CAP_EXCEEDED).
+// Rolling 7-day spend in a category (for WEEKLY_CAP_EXCEEDED): approved (payment in flight), links
+// created, kept or returned. Counting approved stops two concurrent approvals both passing.
 export function spentThisWeekCents(db: Db, category: Category, nowMs: number): number {
   const since = new Date(nowMs - 7 * 86_400_000).toISOString();
   const row = db.prepare(`SELECT COALESCE(SUM(total_cents), 0) AS s FROM purchases
-    WHERE category = ? AND status IN ('link_created', 'kept', 'returned') AND created_at >= ?`).get(category, since) as { s: number };
+    WHERE category = ? AND status IN ('approved', 'link_created', 'kept', 'returned') AND created_at >= ?`).get(category, since) as { s: number };
   return row.s;
 }

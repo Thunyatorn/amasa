@@ -58,6 +58,14 @@ describe("audit log (SPEC §13)", () => {
     expect(verifyAudit(db).brokenAt).toBe(1);
   });
 
+  it("setting erased = 1 cannot hide an edited payload", () => {
+    fill();
+    db.prepare("UPDATE audit SET erased = 1, payload = ? WHERE seq = 2").run('{"cartId":"forged"}');
+    expect(verifyAudit(db).brokenAt).toBe(2);
+    db.prepare("UPDATE audit SET erased = 2, payload = '{}' WHERE seq = 2").run();
+    expect(verifyAudit(db).brokenAt).toBe(2);
+  });
+
   it("erasing payloads keeps every hash, so the chain still verifies", () => {
     fill();
     eraseAuditPayloads(db);

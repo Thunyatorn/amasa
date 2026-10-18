@@ -129,6 +129,23 @@ describe("contracts, carts, verify and approve stages", () => {
     expect(payCalls).toHaveLength(0);
   });
 
+  it("I7: approve re-reads autonomy; at level 2 the weekly cap counts in-flight and created links", async () => {
+    const setLevel = (level: number, cap: number) => getDb().prepare("INSERT OR REPLACE INTO autonomy (category, json) VALUES ('running-shoes', ?)")
+      .run(JSON.stringify({ category: "running-shoes", level, offeredLevel: null, consecutiveGood: 0, weeklyCapCents: cap, updatedAt: new Date().toISOString() }));
+    getDb().prepare("DELETE FROM purchases WHERE status IN ('approved', 'link_created')").run(); // isolate from earlier tests
+    const first = freshCart();
+    const second = freshCart();
+    setLevel(2, 13932 * 2 - 1); // room for exactly one $139.32 order
+    const a1 = (await verifyCart(first)).approval!;
+    const a2 = (await verifyCart(second)).approval!;
+    await approveCart(first, a1.approvalNonce);
+    expect(await code(approveCart(second, a2.approvalNonce))).toBe("409 WEEKLY_CAP_EXCEEDED");
+    expect(payCalls).toHaveLength(1);
+    setLevel(0, 0); // lowering the level takes effect on the very next approve (I7)
+    expect((await approveCart(second, a2.approvalNonce)).paymentLinkUrl).toContain("https://");
+    getDb().prepare("DELETE FROM autonomy").run();
+  });
+
   it("every step above left a verifiable audit chain", () => {
     const check = verifyAudit(getDb());
     expect(check.ok).toBe(true);

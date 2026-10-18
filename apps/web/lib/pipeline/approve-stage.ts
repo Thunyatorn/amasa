@@ -27,29 +27,32 @@ export async function approveCart(cartId: string, approvalNonce: string, nowMs =
     throw new ApiError(409, "NOT_VERIFIED", "This purchase is no longer waiting for approval.");
   }
 
-  // Re-read autonomy server-side (I7). At level 2 the weekly cap must still hold.
-  const autonomy = getAutonomy(db, fields.category);
-  if (autonomy.level === 2 && spentThisWeekCents(db, fields.category, nowMs) + fields.totalCents > autonomy.weeklyCapCents) {
-    throw new ApiError(409, "WEEKLY_CAP_EXCEEDED", "This order would go over your weekly limit.");
-  }
-
-  const ts = new Date(nowMs).toISOString();
-  const consumed = db.transaction(() => {
-    if (!consumeNonce(db, cartId, approvalNonce)) return false;
-    transitionPurchase(db, fields.purchaseNumber, "verified", "approved");
-    appendAudit(db, "approved", { cartId, purchaseNumber: fields.purchaseNumber, totalCents: fields.totalCents }, ts);
-    return true;
-  }).immediate();
-  if (!consumed) throw new ApiError(409, "NONCE_INVALID", "This approval was already used or is not valid.");
-
-  const request = PaymentRequest.parse({
+  // Build the payment request before spending the nonce, so a bad stored quote cannot leave the
+  // purchase stuck in "approved".
+  const request = PaymentRequest.safeParse({
     fields,
     signature,
     lines: quote.lines.map((l) => ({ sku: l.sku, title: l.title, qty: l.qty, unitCents: l.unitCents })),
     taxCents: quote.taxCents,
     shippingCents: quote.shippingCents,
   });
-  const outcome = await requestPaymentLink(request);
+  if (!request.success) throw new ApiError(409, "NOT_VERIFIED", "This cart needs to be checked again before it can be approved.");
+
+  // One write transaction: re-read autonomy (I7) and the weekly spend, then consume the nonce. A
+  // concurrent approval waits for the lock, so it sees this purchase as spent.
+  const ts = new Date(nowMs).toISOString();
+  const outcomeOfConsume = db.transaction((): "ok" | "cap" | "nonce" => {
+    const autonomy = getAutonomy(db, fields.category);
+    if (autonomy.level === 2 && spentThisWeekCents(db, fields.category, nowMs) + fields.totalCents > autonomy.weeklyCapCents) return "cap";
+    if (!consumeNonce(db, cartId, approvalNonce)) return "nonce";
+    transitionPurchase(db, fields.purchaseNumber, "verified", "approved");
+    appendAudit(db, "approved", { cartId, purchaseNumber: fields.purchaseNumber, totalCents: fields.totalCents }, ts);
+    return "ok";
+  }).immediate();
+  if (outcomeOfConsume === "cap") throw new ApiError(409, "WEEKLY_CAP_EXCEEDED", "This order would go over your weekly limit.");
+  if (outcomeOfConsume === "nonce") throw new ApiError(409, "NONCE_INVALID", "This approval was already used or is not valid.");
+
+  const outcome = await requestPaymentLink(request.data);
   const doneTs = new Date().toISOString();
 
   if (!outcome.ok) {

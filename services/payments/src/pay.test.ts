@@ -34,11 +34,13 @@ describe("POST /pay checks (SPEC §10.3)", () => {
   let visaCalls: PaymentRequest[];
   let clock: number;
   let visaFails: boolean;
+  let visaChargesCents: number | null; // null = Visa charges exactly the requested total
 
   beforeEach(() => {
     visaCalls = [];
     clock = NOW;
     visaFails = false;
+    visaChargesCents = null;
     deps = {
       db: openPaymentsDb(":memory:"),
       publicKey: keys.publicKey,
@@ -47,7 +49,8 @@ describe("POST /pay checks (SPEC §10.3)", () => {
       createLink: async (req) => {
         visaCalls.push(req);
         if (visaFails) throw new Error("Failed to create payment link");
-        return { paymentLinkUrl: "https://ebc2test.cybersource.com/ebc2/payByLink/pay/test", result: { id: req.fields.purchaseNumber } };
+        return { paymentLinkUrl: "https://ebc2test.cybersource.com/ebc2/payByLink/pay/test",
+          chargedCents: visaChargesCents ?? req.fields.totalCents, result: { id: req.fields.purchaseNumber } };
       },
     };
   });
@@ -146,6 +149,23 @@ describe("POST /pay checks (SPEC §10.3)", () => {
     visaFails = true;
     expect(await handlePay(request(), deps)).toMatchObject({ status: 502, body: { code: "VISA_FAILED" } });
     expect(status()).toBe("failed");
+  });
+
+  it("a link whose Visa amount differs from the signed total is not handed out (M2 finding: $129 vs $139.32)", async () => {
+    visaChargesCents = 12900;
+    const r = await handlePay(request(), deps);
+    expect(r).toMatchObject({ status: 502, body: { code: "AMOUNT_MISMATCH" } });
+    expect(JSON.stringify(r.body)).not.toContain("https://");
+    expect(status()).toBe("failed");
+  });
+
+  it("requests still waiting on Visa count toward the daily limit", async () => {
+    deps.maxDailyCents = 13932 * 2 - 1;
+    deps.db.prepare("INSERT INTO payments (purchase_number, status, total_cents, result_json, created_at) VALUES ('BBBBBBBBBBBBBBB1', 'reserved', 13932, NULL, ?)")
+      .run(new Date(NOW).toISOString());
+    const r = await handlePay(request(), deps);
+    expect(r).toMatchObject({ status: 403, body: { code: "DAILY_LIMIT" } });
+    expect(visaCalls).toHaveLength(0);
   });
 
   it("unknown keys and malformed bodies are rejected before anything else", async () => {

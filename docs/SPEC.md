@@ -735,7 +735,9 @@ export async function createLink(req: PaymentRequest) {
 - This code is called by the payments service, never by a model (I1).
 - Run `tsc` against the installed package; the `execute` signature comes from AI SDK v4.
 - **VERIFY** in the sandbox: (a) whether tax and shipping should be line items or only
-  folded into `totalAmount` (still open). (b) **Answered in M0 (2026-10-17):** the link URL is
+  folded into `totalAmount`. **Answered in M2:** neither works; Visa charges only the first line
+  item, so `createLink` sends one line priced at the full total (see §20 item 2). The code block
+  above is the original M0 version. (b) **Answered in M0 (2026-10-17):** the link URL is
   `purchaseInformation.paymentLink` (e.g. `https://ebc2test.cybersource.com:443/ebc2/payByLink/pay/…`).
   The response also has `id` (equal to the purchase number), `status` (`"ACTIVE"` on create),
   and amounts echoed without trailing zeros (`"1"` for `"1.00"`). Extract the URL field explicitly.
@@ -963,9 +965,10 @@ Model IDs are left blank on purpose: pick current ones from your provider's docu
 
 1. ~~Which field in the Visa payment-link response holds the link URL (§10.4).~~ Answered in M0:
    `purchaseInformation.paymentLink`.
-2. Whether tax and shipping belong as line items or only in `totalAmount` (§10.4). M2 finding: with
-   `totalAmount: "139.32"` and a "Tax" line item, Visa echoed `totalAmount: "129"`. Still open until
-   the amount on the hosted page is checked.
+2. ~~Whether tax and shipping belong as line items or only in `totalAmount` (§10.4).~~ Answered in M2:
+   Visa Pay by Link charges only the first line item's unit price, once (it ignores `totalAmount`,
+   quantities and other lines). The link therefore carries one line, quantity 1, priced at the full
+   signed total, and `/pay` rejects any link whose echoed total differs from the signed total.
 3. Whether `get_payment_link` exposes a status that shows the link was paid (§3).
 4. Whether Visa mentors can grant Visa Intelligent Commerce sandbox access (would allow
    unattended level-2 payment; until then level 2 prepares a one-tap payment).

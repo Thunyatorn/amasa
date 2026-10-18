@@ -50,7 +50,10 @@ export function appendAudit(db: Database, type: AuditType, payload: Record<strin
 export interface AuditCheck { ok: boolean; length: number; brokenAt: number | null }
 
 // Recomputes the chain. Every row: seq is contiguous, prev_hash links to the previous row's hash,
-// and hash matches its fields. Rows with erased = 0: sha256(payload) === payload_hash.
+// and hash matches its fields. Rows with erased = 0: sha256(payload) === payload_hash. Rows with
+// erased = 1: payload is exactly '{}'. Limits (stated, not hidden): the chain has no outside anchor,
+// so deleting the newest rows or rebuilding the whole chain is not detected here; receipts showing
+// the chain head (M5) are the outside anchor.
 export function verifyAudit(db: Database): AuditCheck {
   const rows = db.prepare("SELECT * FROM audit ORDER BY seq ASC").all() as Row[];
   let prev = GENESIS_HASH;
@@ -58,10 +61,16 @@ export function verifyAudit(db: Database): AuditCheck {
     const broken = (): AuditCheck => ({ ok: false, length: rows.length, brokenAt: r.seq });
     if (r.seq !== i + 1 || r.prev_hash !== prev) return broken();
     if (rowHash(r.seq, r.ts, r.type, r.payload_hash, r.prev_hash) !== r.hash) return broken();
-    if (r.erased === 0) {
+    if (r.erased === 1) {
+      // Erasure (DELETE /api/me) only ever blanks a payload. Anything else in an erased row is a
+      // rewrite, so the erased flag cannot be used to hide an edited payload.
+      if (r.payload !== "{}") return broken();
+    } else if (r.erased === 0) {
       let parsed: unknown;
       try { parsed = JSON.parse(r.payload); } catch { return broken(); }
       if (sha256(parsed) !== r.payload_hash) return broken();
+    } else {
+      return broken();
     }
     prev = r.hash;
   }

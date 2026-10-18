@@ -7,7 +7,7 @@ import { repoRoot } from "./paths";
 const Env = z.object({
   SESSION_SECRET: z.string().min(32, "SESSION_SECRET must be at least 32 characters; run pnpm keys"),
   VERIFIER_PRIVATE_KEY_B64: z.string().min(1, "VERIFIER_PRIVATE_KEY_B64 is not set; run pnpm keys"),
-  STORE_BASE_URL: z.string().url().default("http://localhost:3000/api/store"),
+  STORE_BASE_URL: z.string().url().default("http://127.0.0.1:3000/api/store"),
   PAYMENTS_URL: z.string().url().default("http://127.0.0.1:4100"),
   DATABASE_PATH: z.string().optional(),
   TAP_ENABLED: z.enum(["true", "false"]).default("false"),

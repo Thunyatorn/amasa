@@ -2,12 +2,21 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import { defaultDbPath, openPaymentsDb } from "./db";
 import { handlePay, type PayDeps } from "./pay";
 import { loadPublicKey } from "./verdict";
-import { createLink, extractLinkUrl } from "./visa";
+import { createLink, extractLink } from "./visa";
 
 // §10.3 step 1: the payments service listens on loopback only, never on a public interface.
 export const HOST = "127.0.0.1";
 const DEFAULT_PORT = 4100;
 const MAX_BODY_BYTES = 64 * 1024;
+// Shorter than the web app's 90 s client timeout, so the web side always gets a definite answer.
+const VISA_TIMEOUT_MS = 60_000;
+
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error("Visa did not answer in time")), ms);
+    p.then((v) => { clearTimeout(t); resolve(v); }, (e: unknown) => { clearTimeout(t); reject(e); });
+  });
+}
 
 type ErrorBody = { code: string; message: string };
 
@@ -54,7 +63,7 @@ async function handle(req: IncomingMessage, res: ServerResponse, deps: PayDeps |
     const result = await handlePay(body, deps);
     // Log only the purchase number and the outcome: never the request body.
     const pn = typeof (body as { fields?: { purchaseNumber?: unknown } })?.fields?.purchaseNumber === "string"
-      ? (body as { fields: { purchaseNumber: string } }).fields.purchaseNumber.slice(0, 16) : "?";
+      ? (body as { fields: { purchaseNumber: string } }).fields.purchaseNumber.replace(/[^A-Z0-9]/g, "").slice(0, 16) || "?" : "?";
     console.log(`pay ${pn} -> ${result.status} ${"code" in result.body ? result.body.code : "LINK_CREATED"}`);
     sendJson(res, result.status, result.body);
     return;
@@ -94,8 +103,8 @@ export function depsFromEnv(env: NodeJS.ProcessEnv): PayDeps {
     maxDailyCents: maxDaily,
     now: () => Date.now(),
     createLink: async (req) => {
-      const result = await createLink(req);
-      return { paymentLinkUrl: extractLinkUrl(result), result };
+      const result = await withTimeout(createLink(req), VISA_TIMEOUT_MS);
+      return { ...extractLink(result), result };
     },
   };
 }

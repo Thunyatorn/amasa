@@ -4,7 +4,7 @@ import { env } from "./env";
 
 // Calls the isolated payments service (SPEC §10.3). Both reply shapes are zod-parsed.
 const Ok = z.strictObject({ purchaseNumber: z.string(), paymentLinkUrl: z.string().url().startsWith("https://") });
-const Err = z.object({ code: z.string().max(64), message: z.string().max(200) });
+const Err = z.strictObject({ code: z.string().max(64), message: z.string().max(200) });
 
 export type PayOutcome = { ok: true; paymentLinkUrl: string } | { ok: false; code: string; message: string };
 

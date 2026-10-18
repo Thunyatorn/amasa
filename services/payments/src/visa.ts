@@ -57,20 +57,44 @@ export function newPurchaseNumber(): string {
   return out;
 }
 
+// Visa Pay by Link (sandbox, toolkit 0.0.96) charges only the FIRST line item's unit price, once:
+// it ignores totalAmount, quantities and every other line (measured 2026-10-17, see README "M2 fix").
+// So the link carries exactly one line, quantity 1, priced at the full signed total. The itemized
+// cart stays in our signed fields, audit log and receipt; the description lists it for the shopper.
+const MAX_DESCRIPTION = 250;
+// Visa rejects a productDescription with any character outside letters, numbers, spaces and
+// !@#$%?&'(),/_+=.- (sandbox 400 VALIDATION_ERRORS, 2026-10-18). Store titles are untrusted, so
+// everything else becomes a space.
+const visaSafe = (s: string) => s.replace(/[^A-Za-z0-9 !@#$%?&'(),\/_+=.-]/g, " ").replace(/ {2,}/g, " ").trim();
+
+export function buildLinkParams(req: LinkRequest) {
+  const total = dollars(req.fields.totalCents);
+  const parts = [
+    ...req.lines.map((l) => `${l.qty} x ${l.title} $${dollars(l.unitCents)}`),
+    ...(req.taxCents ? [`Tax $${dollars(req.taxCents)}`] : []),
+    ...(req.shippingCents ? [`Shipping $${dollars(req.shippingCents)}`] : []),
+  ];
+  return {
+    linkType: "PURCHASE",
+    purchaseNumber: req.fields.purchaseNumber,
+    currency: "USD",
+    totalAmount: total,
+    lineItems: [{
+      productName: `Amasa order ${req.fields.purchaseNumber}`,
+      productSKU: "AMASA-ORDER",
+      productDescription: visaSafe(parts.join(", ")).slice(0, MAX_DESCRIPTION),
+      quantity: "1",
+      unitPrice: total,
+    }],
+  };
+}
+
 // SPEC §10.4. Returns the parsed Visa response; throws on the toolkit's error string.
 export async function createLink(req: LinkRequest): Promise<unknown> {
   const createPaymentLink = getTools().create_payment_link;
   if (!createPaymentLink?.execute) throw new Error("create_payment_link tool is not available");
-
-  const lineItems = [
-    ...req.lines.map((l) => ({ productName: l.title, productSKU: l.sku,
-      quantity: String(l.qty), unitPrice: dollars(l.unitCents) })),
-    ...(req.taxCents ? [{ productName: "Tax", quantity: "1", unitPrice: dollars(req.taxCents) }] : []),
-    ...(req.shippingCents ? [{ productName: "Shipping", quantity: "1", unitPrice: dollars(req.shippingCents) }] : []),
-  ];
   const raw: unknown = await createPaymentLink.execute(
-    { linkType: "PURCHASE", purchaseNumber: req.fields.purchaseNumber, currency: "USD",
-      totalAmount: dollars(req.fields.totalCents), lineItems },
+    buildLinkParams(req),
     { toolCallId: req.fields.purchaseNumber, messages: [] },
   );
   const result: unknown = JSON.parse(raw as string);
@@ -79,13 +103,26 @@ export async function createLink(req: LinkRequest): Promise<unknown> {
 }
 
 // SPEC §20 item 1 (answered in M0): the link URL is purchaseInformation.paymentLink.
-// Not strict: the Visa response has many other fields; only this one is used.
+// Visa echoes the amount it will charge in orderInformation.amountDetails.totalAmount, without
+// trailing zeros ("129", "1.08"). Not strict: the response has many other fields.
 const LinkResponse = z.object({
   purchaseInformation: z.object({ paymentLink: z.string().url().startsWith("https://") }),
+  orderInformation: z.object({
+    amountDetails: z.object({ totalAmount: z.string().regex(/^\d+(\.\d{1,2})?$/), currency: z.literal("USD") }),
+  }),
 });
 
-export function extractLinkUrl(result: unknown): string {
+// "129" -> 12900, "1.08" -> 108, "139.3" -> 13930. Integer math only.
+export function amountToCents(amount: string): number {
+  const [whole, frac = ""] = amount.split(".");
+  return Number(whole) * 100 + Number(frac.padEnd(2, "0"));
+}
+
+export function extractLink(result: unknown): { paymentLinkUrl: string; chargedCents: number } {
   const parsed = LinkResponse.safeParse(result);
-  if (!parsed.success) throw new Error("Visa response has no purchaseInformation.paymentLink");
-  return parsed.data.purchaseInformation.paymentLink;
+  if (!parsed.success) throw new Error("Visa response is missing the payment link or the USD total");
+  return {
+    paymentLinkUrl: parsed.data.purchaseInformation.paymentLink,
+    chargedCents: amountToCents(parsed.data.orderInformation.amountDetails.totalAmount),
+  };
 }

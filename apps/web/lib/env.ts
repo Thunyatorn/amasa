@@ -32,3 +32,33 @@ export function env(): Env {
 export function databasePath(): string {
   return process.env.DATABASE_PATH || join(repoRoot(), "data", "amasa.db");
 }
+
+// Model settings, read only by code that calls a model (SPEC §19). Two providers:
+// "anthropic" (Claude through the Anthropic API, needs a key) and "ollama" (a model running on
+// this machine, reached through Ollama's OpenAI-compatible endpoint; no key, no API bill).
+const AnthropicEnv = z.strictObject({
+  MODEL_PROVIDER: z.literal("anthropic"),
+  ANTHROPIC_API_KEY: z.string().trim().min(1),
+  MODEL_PLANNER: z.string().trim().min(1),
+});
+const OllamaEnv = z.strictObject({
+  MODEL_PROVIDER: z.literal("ollama"),
+  OLLAMA_BASE_URL: z.string().url().default("http://127.0.0.1:11434/v1"),
+  MODEL_PLANNER: z.string().trim().min(1),
+});
+export type ModelEnv = z.infer<typeof AnthropicEnv> | z.infer<typeof OllamaEnv>;
+let cachedModel: ModelEnv | undefined;
+
+export function modelEnv(): ModelEnv {
+  if (cachedModel) return cachedModel;
+  const { MODEL_PROVIDER, ANTHROPIC_API_KEY, OLLAMA_BASE_URL, MODEL_PLANNER } = process.env;
+  const parsed = MODEL_PROVIDER === "ollama"
+    ? OllamaEnv.safeParse({ MODEL_PROVIDER, OLLAMA_BASE_URL: OLLAMA_BASE_URL || undefined, MODEL_PLANNER })
+    : AnthropicEnv.safeParse({ MODEL_PROVIDER, ANTHROPIC_API_KEY, MODEL_PLANNER });
+  if (!parsed.success) {
+    const variables = [...new Set(parsed.error.issues.map((issue) => issue.path.join(".")))];
+    throw new Error(`Server configuration error: ${variables.join(", ")} must be configured (MODEL_PROVIDER must be anthropic or ollama; anthropic needs ANTHROPIC_API_KEY; MODEL_PLANNER must be non-empty; OLLAMA_BASE_URL, if set, must be a URL).`);
+  }
+  cachedModel = parsed.data;
+  return cachedModel;
+}

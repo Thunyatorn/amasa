@@ -117,3 +117,19 @@ equivalent and say so.
 
 Ask instead of guessing about anything that touches the money path, signature
 formats, or the Visa toolkit's behavior.
+
+<!-- ## Delegation rule (saving Claude tokens)
+
+- Do NOT write or edit code yourself. Delegate all implementation by running:
+  `codex exec -s workspace-write -o /tmp/codex_out.txt "<task>" > /dev/null 2>&1; cat /tmp/codex_out.txt`
+- Give Codex the full context in the prompt: goal, file paths, constraints, how to verify.
+- Tell Codex in every task never to open, print or edit `.env*` files (they hold the Visa secret and
+  the signing key), and to read the relevant CLAUDE.md invariants and SPEC sections first.
+- For follow-up fixes on the same task, continue Codex's session instead of re-explaining:
+  `codex exec resume --last -o /tmp/codex_out.txt "<fix>" > /dev/null 2>&1; cat /tmp/codex_out.txt`
+- Codex tasks can take several minutes. Use a long Bash timeout (up to 10 min) or run it in the background.
+- Verify cheaply: `git diff --stat`, run tests, read only changed lines. Review every money-path change
+  (invariants I1–I7) before accepting it.
+- If Codex's result is wrong, send a follow-up with the specific fix. Don't fix it yourself.
+- Docs and README edits, git commits (user picks the message, no Claude co-author line) and running
+  commands stay with Claude. Keep replies to the user short. -->

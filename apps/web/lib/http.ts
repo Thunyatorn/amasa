@@ -30,7 +30,7 @@ export function route<A extends unknown[]>(fn: (...args: A) => Promise<Response>
       return await fn(...args);
     } catch (e) {
       if (e instanceof ApiError) return json({ code: e.code, message: e.message }, e.status);
-      console.error(`internal error: ${e instanceof Error ? e.message.slice(0, 300) : "unknown"}`);
+      console.error(`internal error: ${e instanceof Error ? `${e.name}: ${e.message.slice(0, 300)}` : "unknown"}`);
       return json({ code: "INTERNAL", message: "Something went wrong. Please try again." }, 500);
     }
   };

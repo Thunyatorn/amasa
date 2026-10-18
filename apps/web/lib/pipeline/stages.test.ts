@@ -1,4 +1,4 @@
-import { createPublicKey, verify as edVerify } from "node:crypto";
+import { randomUUID, createPublicKey, verify as edVerify } from "node:crypto";
 import { rmSync } from "node:fs";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { canon, priceLines, type Quote, type StoreListing } from "@amasa/schemas";
@@ -44,6 +44,7 @@ vi.mock("../payments-client", () => ({
 }));
 
 import { getDb } from "../db";
+import { insertDraft } from "../db/drafts";
 import { saveOptions } from "../db/options";
 import { ApiError } from "../http";
 import { approveCart } from "./approve-stage";
@@ -58,7 +59,9 @@ const draft = {
 };
 
 function freshCart(): string {
-  const { contract } = confirmContract(draft);
+  const draftId = randomUUID();
+  insertDraft(getDb(), draftId, draft, new Date().toISOString());
+  const { contract } = confirmContract({ draftId, draft });
   saveOptions(getDb(), contract.id, [{ rank: 1, lines: [{ sku: "SHOE-WIDE-01", qty: 1 }], reason: "test",
     estimate: { totalCents: 13932, deliveryDays: 3, returnDays: 30 } }], [], new Date().toISOString());
   return createCart(contract.id, 1).id;
@@ -74,9 +77,9 @@ describe("contracts, carts, verify and approve stages", () => {
   beforeEach(() => { payCalls.length = 0; store.unitCents = 12900; });
 
   it("contract confirmation rejects open questions, missing budgets and unknown stores", async () => {
-    expect(await code(Promise.resolve().then(() => confirmContract({ ...draft, question: "Which size?" })))).toBe("400 DRAFT_HAS_QUESTION");
-    expect(await code(Promise.resolve().then(() => confirmContract({ ...draft, budgetCapCents: null })))).toBe("400 BUDGET_REQUIRED");
-    expect(await code(Promise.resolve().then(() => confirmContract({ ...draft, allowedMerchants: ["evil-store"] })))).toBe("400 UNKNOWN_MERCHANT");
+    expect(await code(Promise.resolve().then(() => confirmContract({ draftId: randomUUID(), draft: { ...draft, question: "Which size?" } })))).toBe("400 DRAFT_HAS_QUESTION");
+    expect(await code(Promise.resolve().then(() => confirmContract({ draftId: randomUUID(), draft: { ...draft, budgetCapCents: null } })))).toBe("400 BUDGET_REQUIRED");
+    expect(await code(Promise.resolve().then(() => confirmContract({ draftId: randomUUID(), draft: { ...draft, allowedMerchants: ["evil-store"] } })))).toBe("400 UNKNOWN_MERCHANT");
   });
 
   it("a passing cart gets a verdict signed with the verifier key over canon(SignedFields)", async () => {

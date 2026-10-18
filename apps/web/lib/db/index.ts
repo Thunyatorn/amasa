@@ -5,12 +5,15 @@ import { migrateAudit } from "@amasa/audit";
 import { databasePath } from "../env";
 
 // SPEC §14: data/amasa.db (better-sqlite3, WAL). Additions to §14, documented in the README:
-// carts.quote_json, purchases.failure_codes, and the options table.
+// carts.quote_json, purchases.failure_codes, the options table, and contract_drafts (M3).
 
 export type Db = Database.Database;
 
 export function migrate(db: Db): void {
   db.exec(`
+    CREATE TABLE IF NOT EXISTS contract_drafts (
+      id TEXT PRIMARY KEY, json TEXT NOT NULL, created_at TEXT NOT NULL,
+      unsupported_json TEXT NOT NULL DEFAULT '[]');
     CREATE TABLE IF NOT EXISTS contracts (
       id TEXT PRIMARY KEY, json TEXT NOT NULL, hash TEXT NOT NULL, created_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS carts (
@@ -26,6 +29,11 @@ export function migrate(db: Db): void {
     CREATE TABLE IF NOT EXISTS profile_entries (id TEXT PRIMARY KEY, json TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS autonomy (category TEXT PRIMARY KEY, json TEXT NOT NULL);
   `);
+  // Databases created before unsupported_json existed get the column added in place.
+  const draftColumns = db.prepare("PRAGMA table_info(contract_drafts)").all() as { name: string }[];
+  if (!draftColumns.some((column) => column.name === "unsupported_json")) {
+    db.exec("ALTER TABLE contract_drafts ADD COLUMN unsupported_json TEXT NOT NULL DEFAULT '[]'");
+  }
   migrateAudit(db);
 }
 

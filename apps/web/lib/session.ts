@@ -71,3 +71,8 @@ export function requireSessionAndCsrf(request: Request): void {
     throw new ApiError(403, "CSRF_FAILED", "This request could not be confirmed. Reload the page and try again.");
   }
 }
+
+export function sessionId(request: Request): string {
+  requireSession(request);
+  return parseCookies(request.headers.get("cookie"))[SESSION_COOKIE]!.split(".")[0]!;
+}

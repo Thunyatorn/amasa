@@ -374,8 +374,9 @@ CSRF cookie (double-submit). All bodies are zod-parsed; errors return
 | Method + path | Body | Returns | Notes |
 | --- | --- | --- | --- |
 | `GET /api/csrf` | — | `{ token }` + cookie | |
-| `POST /api/intake` | `{ goal }` | `{ draft: ContractDraft }` | Model stage 1 (§7.1) |
-| `POST /api/contracts` | `{ draft }` (user-edited, `question` null, budget set) | `{ contract, contractHash }` | Assigns id + confirmedAt; audit `contract_confirmed` |
+| `POST /api/intake` | `{ goal }` (3–300 chars) | `{ draftId, draft: ContractDraft, unsupported: Rule[] }` | Model stage 1 (§7.1). Stores the draft. `unsupported`: requirements from the goal the store can't check; never in the contract. Rate limit 20/session/hour |
+| `GET /api/drafts/[id]` | — | `{ draft, unsupported }` | The stored draft for screen 2 (added in M3) |
+| `POST /api/contracts` | `{ draftId, draft, acknowledgedUnsupported? }` (user-edited, `question` null, budget set) | `{ contract, contractHash }` | Contract id = `draftId`; the draft is consumed in the same transaction (second confirm: 409). Every rule's key must be a store attribute for the category. `acknowledgedUnsupported: true` is required when the stored draft had `unsupported` rules. Audit `contract_confirmed` |
 | `GET /api/contracts/[id]` | — | `{ contract, contractHash }` | |
 | `POST /api/shop` | `{ contractId }` | `text/event-stream` of `ProgressEvent` | Stages 2–5 (§7.4) |
 | `POST /api/carts` | `{ contractId, rank }` | `{ cart }` | Builds the cart from the chosen option; audit `cart_created` |
@@ -814,6 +815,9 @@ Rules (code in `apps/web/lib/autonomy.ts`):
 `purchases(purchase_number PK, cart_id, contract_id, category, status, total_cents, payment_link_url, created_at)`,
 `profile_entries(id, json)`, `autonomy(category PK, json)`, `audit(...)` (§13).
 
+Added in M3: `contract_drafts(id PK, json, created_at, unsupported_json)`: intake drafts until
+the user confirms one (the row is deleted when its contract is stored).
+
 Added in M2: `carts.quote_json` (the quote snapshot `/api/approve` needs to build `PaymentRequest`),
 `purchases.failure_codes` (a blocked row records its codes, §3), and
 `options(contract_id PK, json, flagged_json, created_at)`: the latest shopping run's options and
@@ -950,7 +954,9 @@ seconds from contract to payment link. Report the numbers exactly as measured.
 ## §19 Environment variables
 
 See `.env.example`. Web: `MODEL_PROVIDER`, the provider key (`ANTHROPIC_API_KEY` or
-`OPENAI_API_KEY`), `MODEL_PLANNER`, `MODEL_READER`, `SESSION_SECRET`,
+`OPENAI_API_KEY`), `MODEL_PLANNER` (also used by intake, §7.1), `MODEL_READER`,
+`OLLAMA_BASE_URL` (added in M3: `MODEL_PROVIDER=ollama` runs a local model through Ollama's
+OpenAI-compatible endpoint with `@ai-sdk/openai`, no key; default `http://127.0.0.1:11434/v1`), `SESSION_SECRET`,
 `VERIFIER_PRIVATE_KEY_B64`, `PAYMENTS_URL`, `STORE_BASE_URL`, `DATABASE_PATH`,
 `MAX_STEPS`, `RUN_TOKEN_BUDGET`, `DEMO_REPLAY`, `TAP_ENABLED`, `TAP_AGENT_PRIVATE_KEY_B64`,
 `TAP_AGENT_PUBLIC_KEY_B64`. Payments: `VISA_ACCEPTANCE_MERCHANT_ID`,

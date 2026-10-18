@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { amountToCents, buildLinkParams, extractLink } from "./visa";
 
-// The Visa sandbox charges only the first line item's unit price, once (README "M2 fix"), so the
+// The Visa sandbox charges only the first line item's unit price, once (docs/BUILD_LOG.md "M2 fix"), so the
 // link must carry a single line priced at the full signed total.
 const req = {
   fields: { purchaseNumber: "ABCDEF0123456789", totalCents: 13932 },

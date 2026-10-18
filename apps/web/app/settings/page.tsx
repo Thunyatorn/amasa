@@ -61,9 +61,7 @@ export default function SettingsPage() {
   const deleteAll = () => act(async () => { await api("/api/me", OkResult, undefined, undefined, "DELETE"); setConfirmDelete(false); return "All your data was deleted. Your history keeps only fingerprints, so it still verifies."; });
 
   return <main className="screen wide">
-    <p className="eyebrow">Your shopping, on your terms</p>
     <h1>Settings</h1>
-    <p className="subtitle">Decide what Amasa remembers and how much it prepares for you.</p>
     <p role="status" aria-live="polite">{message}</p>
     {error && <p role="alert">{error}</p>}
     {!audit && !error && <p role="status">Loading your preferences and history...</p>}

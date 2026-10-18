@@ -23,3 +23,7 @@ scripts/celebrities/__pycache__/
 
 # Celebrity photos stay local until image rights are cleared (the app serves them from disk)
 data/celebrities/*.jpg
+
+# Project docs and Claude instructions stay local
+/docs/
+/CLAUDE.md

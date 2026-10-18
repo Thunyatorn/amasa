@@ -58,7 +58,7 @@ export function newPurchaseNumber(): string {
 }
 
 // Visa Pay by Link (sandbox, toolkit 0.0.96) charges only the FIRST line item's unit price, once:
-// it ignores totalAmount, quantities and every other line (measured 2026-10-17, see README "M2 fix").
+// it ignores totalAmount, quantities and every other line (measured 2026-10-17, see docs/BUILD_LOG.md "M2 fix").
 // So the link carries exactly one line, quantity 1, priced at the full signed total. The itemized
 // cart stays in our signed fields, audit log and receipt; the description lists it for the shopper.
 const MAX_DESCRIPTION = 250;

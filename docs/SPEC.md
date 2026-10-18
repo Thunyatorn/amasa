@@ -968,6 +968,11 @@ Each requirement traces to the research in the design doc's UX playbook tab.
 | 7 | `/receipt/[purchaseNumber]` | Items, total, data used, return countdown, audit head hash, Kept / Returned buttons (demo), profile suggestion with Keep / Forget | Silent profile changes | Aguirre 2015; Amershi G13, G14 |
 | 8 | `/settings` | Autonomy level per category with what each level does and what changes if raised; offer banner when `offeredLevel` is set; one-tap lower; profile list where each entry can be edited or forgotten; Delete all my data | Auto-promotion; hard-to-find delete | Amershi G9, G16, G17; Lee & See 2004 |
 
+Owner decision (celebrity pivot): screen 1 no longer shows the "I shop demo-store and never pay
+without your OK" line, a visible headline or the "From intent to informed choice" heading; the three
+"Make it yours / See the trade-offs / Stay in control" points stay, and the header links read "Home"
+and "Settings".
+
 **Change notices (all screens):** whenever an autonomy level or profile entry changes,
 including an automatic demotion (§11), show an in-app notice saying what changed and why,
 with a link to `/settings`. [Amershi G14, G18]

@@ -4,7 +4,7 @@ import Database from "better-sqlite3";
 import { migrateAudit } from "@amasa/audit";
 import { databasePath } from "../env";
 
-// SPEC §14: data/amasa.db (better-sqlite3, WAL). Additions to §14, documented in the README:
+// SPEC §14: data/amasa.db (better-sqlite3, WAL). Additions to §14, documented in docs/BUILD_LOG.md:
 // carts.quote_json, purchases.failure_codes, the options table, contract_drafts (M3), and in M5
 // the notices table plus purchases.audit_head, purchases.brands_json and purchases.outcome_reason.
 

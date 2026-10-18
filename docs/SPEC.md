@@ -174,7 +174,7 @@ export const Option = z.strictObject({
   rank: z.number().int().min(1).max(3),
   lines: z.array(z.strictObject({ sku: Sku, qty: z.number().int().positive() })).min(1).max(5),
   reason: z.string().max(120),                    // planner-written, plain text, urgency stripped
-  estimate: z.strictObject({                      // code-computed from listings (§4.4 rules)
+  estimate: z.strictObject({                      // code-computed from listings (§4.1 rules)
     totalCents: z.number().int(), deliveryDays: z.number().int(), returnDays: z.number().int(),
   }),
 });
@@ -578,7 +578,7 @@ everything that is wrong at once.
 | --- | --- |
 | `CONTRACT_HASH_MISMATCH` | `sha256(contract) !== storedContractHash`, or `cart.contractHash !== storedContractHash` |
 | `EMPTY_CART` | No lines (stop evaluating) |
-| `SKU_NOT_IN_QUOTE` | `quote` is null, or a cart line is missing from the quote or its qty differs (stop evaluating) |
+| `SKU_NOT_IN_QUOTE` | `quote` is null, or a cart line is missing from the quote or its qty differs, or the quote has a line that is not in the cart (stop evaluating) |
 | `MERCHANT_NOT_ALLOWED` | `cart.merchant` or `quote.merchant` not in `contract.allowedMerchants` |
 | `TAP_FAILED` | `tap.required && !tap.verified` (TAP is a stretch goal; `required` is false by default) |
 | `QUOTE_STALE` | `now - quote.quotedAt > 5 * 60_000` |
@@ -630,6 +630,8 @@ Also test `canon()`: key order does not change the hash; `undefined` keys are dr
 A Vitest test reads every `.ts` file under `packages/verifier/src`, `packages/schemas/src`,
 `packages/audit/src` and `services/payments/src` and fails if any matches
 `/from\s+["'](ai|@ai-sdk\/[^"']+)["']/` or `/require\(["'](ai|@ai-sdk\/[^"']+)["']\)/`.
+Added in M1: it also matches bare imports (`import "ai"`) and dynamic imports (`import("ai")`),
+because the M1 acceptance check uses `import "ai"`, which the two patterns above do not match.
 
 ---
 

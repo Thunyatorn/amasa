@@ -35,8 +35,13 @@ const identity = (rule: Rule) => JSON.stringify([rule.key, rule.op, rule.value])
 const TIME_WORDS = /\b(by|before|until|till|deadline|due|need(ed)? (it|them)|arrive|deliver(ed|y)?|today|tonight|tomorrow|week(end)?|month|days?|monday|tuesday|wednesday|thursday|friday|saturday|sunday|jan(uary)?|feb(ruary)?|mar(ch)?|apr(il)?|june?|july?|aug(ust)?|sep(t(ember)?)?|oct(ober)?|nov(ember)?|dec(ember)?|christmas|birthday)\b|\d{1,2}[/-]\d{1,2}|\d{4}-\d{2}-\d{2}/i;
 export const mentionsTiming = (goal: string) => TIME_WORDS.test(goal);
 
+// "Must be returnable" is already the contract's minReturnDays. A separate rule for it (models write
+// e.g. returnable = yes) is redundant, so it is dropped when the return window is at least 14 days.
+const RETURN_RULE = /^(returnable|returns?|return_policy|refundable)$/;
+
 export function normalizeDraft(draft: ContractDraft, goal: string): IntakeResult {
-  const parsed = ContractDraft.parse(draft);
+  const input = ContractDraft.parse(draft);
+  const parsed = { ...input, mustHave: input.mustHave.filter((rule) => !(RETURN_RULE.test(rule.key) && input.minReturnDays >= 14)) };
   const kept = new Map<string, Rule>();
   const unsupported = new Map<string, Rule>();
   for (const original of parsed.mustHave) {

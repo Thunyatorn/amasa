@@ -228,6 +228,16 @@ describe("shopping run (SPEC §7.4, §6)", () => {
     } finally { vi.unstubAllEnvs(); }
   });
 
+  it("runs the level 1/2 preparation after the options and before done", async () => {
+    const prepare = vi.fn(async (_c: Contract, options: readonly unknown[], emit: (e: ProgressEvent) => void) => {
+      emit({ type: "step", text: `prepared ${options.length}` });
+    });
+    await run({ prepare });
+    const order = events.map((e) => (e.type === "step" ? e.text : e.type));
+    expect(order.slice(-3)).toEqual(["options", "prepared 2", "done"]);
+    expect(prepare).toHaveBeenCalledTimes(1);
+  });
+
   it("finishes with no options when the search finds nothing", async () => {
     await run({ store: { search: async () => [], page: store.page } });
     expect(ofType("step").map((e) => e.text)).toContain("Found 0 products");

@@ -36,7 +36,10 @@ function WhyPanel({ detail, id }: { detail: OptionsEvent["details"][number]; id:
   </div>;
 }
 
-export function OptionCards({ result, open, onToggle, now }: { result: OptionsEvent; open: ReadonlySet<number>; onToggle: (rank: number) => void; now: number }) {
+export function OptionCards({ result, open, onToggle, now, onChoose, chooseDisabled = false }: {
+  result: OptionsEvent; open: ReadonlySet<number>; onToggle: (rank: number) => void; now: number;
+  onChoose?: (rank: number) => void; chooseDisabled?: boolean;
+}) {
   return <ol className="options">{result.options.map((option) => {
     const detail = result.details.find((d) => d.rank === option.rank);
     const products = detail?.products ?? [];
@@ -51,7 +54,10 @@ export function OptionCards({ result, open, onToggle, now }: { result: OptionsEv
         <div><dt>Returns</dt><dd>{days(option.estimate.returnDays)}</dd></div>
         {products.map((p) => <div key={p.sku}><dt>Stock</dt><dd>Store says: {p.stock} in stock</dd></div>)}
       </dl>
-      {detail && <button type="button" className="secondary" aria-expanded={open.has(option.rank)} aria-controls={panelId} onClick={() => onToggle(option.rank)}>Why?</button>}
+      <div className="card-actions">
+        {detail && <button type="button" className="secondary" aria-expanded={open.has(option.rank)} aria-controls={panelId} onClick={() => onToggle(option.rank)}>Why?</button>}
+        {onChoose && <button type="button" disabled={chooseDisabled} onClick={() => onChoose(option.rank)}>Choose this option</button>}
+      </div>
       {detail && open.has(option.rank) && <WhyPanel detail={detail} id={panelId} />}
     </li>;
   })}</ol>;

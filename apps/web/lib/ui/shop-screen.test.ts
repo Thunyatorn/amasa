@@ -86,13 +86,17 @@ describe("screen 4 (SPEC §16)", () => {
     expect(markup).toContain("Summary written by AI from the reviews: good for wide feet, praised for comfort.");
     expect(markup).toContain('<p class="label">Store review</p><p>Finally enough room in the toe box.</p>');
   });
-  it("Why? toggles by rank", () => {
-    const onToggle = vi.fn();
-    const tree = OptionCards({ result: optionsEvent, open: new Set(), onToggle, now: NOW }) as { props: { children: Array<{ props: { children: unknown[] } }> } };
-    const card = tree.props.children[1]!;
-    const button = (card.props.children as Array<{ type?: string; props?: { onClick?: () => void } }>).find((c) => c?.type === "button")!;
-    button.props!.onClick!();
+  it("Why? toggles by rank, and Choose this option chooses by rank", () => {
+    const onToggle = vi.fn(); const onChoose = vi.fn();
+    type Node = { type?: unknown; props?: { children?: unknown; onClick?: () => void } };
+    const all = (node: unknown): Node[] => Array.isArray(node) ? node.flatMap(all) : node && typeof node === "object" && "props" in node
+      ? [node as Node, ...all((node as Node).props?.children)] : [];
+    const buttons = all(OptionCards({ result: optionsEvent, open: new Set(), onToggle, now: NOW, onChoose })).filter((n) => n.type === "button");
+    buttons.filter((b) => b.props?.children === "Why?")[1]!.props!.onClick!();
+    buttons.filter((b) => b.props?.children === "Choose this option")[0]!.props!.onClick!();
     expect(onToggle).toHaveBeenCalledWith(2);
+    expect(onChoose).toHaveBeenCalledWith(1);
+    expect(html(createElement(OptionCards, { result: optionsEvent, open: new Set<number>(), onToggle, now: NOW }))).not.toContain("Choose this option");
   });
   it("the compare table marks the biggest difference in text and states the trade-off", () => {
     const markup = html(createElement(CompareTableView, { result: optionsEvent }));

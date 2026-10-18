@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { ProgressEvent } from "@amasa/schemas";
 import { runShop } from "../../../lib/agent/shop-run.ts";
+import { prepareStage } from "../../../lib/pipeline/prepare-stage.ts";
 import { ApiError, parseBody, route } from "../../../lib/http.ts";
 import { createRateLimiter } from "../../../lib/rate-limit.ts";
 import { requireSessionAndCsrf, sessionId } from "../../../lib/session.ts";
@@ -30,7 +31,7 @@ export const POST = route(async (request: Request) => {
       const emit = (event: ProgressEvent) => {
         if (!closed) sink.enqueue(encoder.encode(encodeEvent(event)));
       };
-      void runShop(contractId, emit, controller.signal).finally(() => {
+      void runShop(contractId, emit, controller.signal, { prepare: prepareStage }).finally(() => {
         if (closed) return;
         closed = true;
         sink.close();

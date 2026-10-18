@@ -10,7 +10,8 @@
     "typecheck": "next typegen && tsc --noEmit",
     "e2e:hardcoded": "tsx scripts/e2e-hardcoded.ts",
     "check:intake": "node --env-file-if-exists=.env.local --import tsx scripts/intake-check.ts",
-    "e2e:shop": "tsx scripts/e2e-shop.ts"
+    "e2e:shop": "tsx scripts/e2e-shop.ts",
+    "e2e:m5": "tsx scripts/e2e-m5.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "4.0.82",

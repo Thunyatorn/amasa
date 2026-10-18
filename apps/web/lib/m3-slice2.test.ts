@@ -40,7 +40,7 @@ function entry(source: "user_edit" | "kept" = "kept"): ProfileEntry {
 function count(table: string): number {
   return (db.prepare(`SELECT count(*) AS n FROM ${table}`).get() as { n: number }).n;
 }
-beforeEach(() => { for (const table of ["profile_entries", "contract_drafts", "contracts", "audit"]) db.prepare(`DELETE FROM ${table}`).run(); });
+beforeEach(() => { for (const table of ["profile_entries", "contract_drafts", "contracts", "audit", "autonomy", "purchases", "notices"]) db.prepare(`DELETE FROM ${table}`).run(); });
 afterAll(() => db.close());
 
 describe("M3 profile API", () => {
@@ -236,7 +236,8 @@ it("logs unexpected route errors server-side but answers with a plain message", 
 
 it("seeds three fixed profile UUIDs idempotently without duplicate audit or overwriting edits", () => {
   seed(db); const first = listProfileEntries(db); seed(db);
-  expect(listProfileEntries(db)).toEqual(first); expect(count("audit")).toBe(3);
+  // 3 profile entries + 1 groceries autonomy change on the first run; the second run adds nothing.
+  expect(listProfileEntries(db)).toEqual(first); expect(count("audit")).toBe(4);
   expect(first.map((row) => row.id)).toEqual(["a3a5a000-0000-4000-8000-000000000001", "a3a5a000-0000-4000-8000-000000000002", "a3a5a000-0000-4000-8000-000000000003"]);
   expect(first.map(({ key, value, source, status }) => ({ key, value, source, status }))).toEqual([
     { key: "size", value: 10.5, source: "user_edit", status: "confirmed" },

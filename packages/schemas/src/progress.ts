@@ -2,6 +2,7 @@ import { z } from "zod";
 import { Sku } from "./contract.ts";
 import { CompareTable, Option } from "./options.ts";
 import { ReaderFacts } from "./reader.ts";
+import { Verdict } from "./payment.ts";
 
 // Added in M4 (documented in SPEC §2.14): what screen 4 needs to explain each option. Everything is
 // code-written from store data, except `facts` (the reader's typed summary of reviews) and
@@ -37,6 +38,13 @@ export const ProgressEvent = z.discriminatedUnion("type", [
     removed: z.array(z.strictObject({ code: z.string(), count: z.number().int() })) }),
   z.strictObject({ type: z.literal("options"), options: z.array(Option).max(3), compare: CompareTable,
     details: z.array(OptionDetail).max(3), others: z.array(OtherSurvivor).max(12) }),
+  // Added in M5 (SPEC §5, §11): at level 1 the server already verified rank 1 (one tap approves it);
+  // at level 2 it also prepared the payment link within the weekly limit. The shopper still pays on
+  // Visa's page.
+  z.strictObject({ type: z.literal("prepared"), level: z.union([z.literal(1), z.literal(2)]), rank: z.number().int().min(1).max(3),
+    cartId: z.string().uuid(), verdict: Verdict,
+    approval: z.strictObject({ approvalNonce: z.string().min(1).max(100), expiresAt: z.number().int() }).nullable(),
+    payment: z.strictObject({ purchaseNumber: z.string().regex(/^[A-Z0-9]{16}$/), paymentLinkUrl: z.string().url() }).nullable() }),
   z.strictObject({ type: z.literal("error"), code: z.string(), message: z.string().max(200) }),
   z.strictObject({ type: z.literal("done") }),
 ]);

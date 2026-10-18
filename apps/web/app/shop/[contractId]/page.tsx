@@ -1,12 +1,17 @@
 "use client";
 
 import { useEffect, useReducer, useRef, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import type { z } from "zod";
 import { api, ContractResult, Id, ruleLabel } from "../../../lib/ui/contracts.ts";
+import { announceChange, ApproveResult, CartResult, DraftIdResult, VerifyResult } from "../../../lib/ui/purchase-api.ts";
 import { streamShop } from "../../../lib/ui/sse.ts";
 import { initialShopState, shopReducer, summaryLine } from "../../../lib/ui/shop-state.ts";
+import { approvalChecks, ApprovalPanel, BlockedPanel, PaymentReady } from "./approval.tsx";
 import { CompareTableView, FilteredOut, money, OptionCards, OthersList, StepList } from "./results.tsx";
+
+type Selection = { rank: number; cartId: string; verdict: z.infer<typeof VerifyResult>["verdict"]; approval: z.infer<typeof VerifyResult>["approval"] };
+type Ready = { purchaseNumber: string; paymentLinkUrl: string; prepared: boolean };
 
 // Screens 3–4 (SPEC §16): the contract card first, live steps with Cancel while the run streams
 // (§6), then options, compare table and the "Filtered out" list.
@@ -20,6 +25,12 @@ export default function ShopPage() {
   const [runKey, setRunKey] = useState(0);
   const [now] = useState(() => Date.now());
   const controller = useRef<AbortController | null>(null);
+  const router = useRouter();
+  const [selection, setSelection] = useState<Selection | null>(null);
+  const [ready, setReady] = useState<Ready | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [panelError, setPanelError] = useState("");
+  const [expired, setExpired] = useState(false);
 
   useEffect(() => {
     const id = Id.safeParse(contractId);
@@ -48,6 +59,52 @@ export default function ShopPage() {
     });
     return () => abort.abort();
   }, [contractId, runKey]);
+
+  // Level 1/2 (SPEC §5): the server already verified rank 1, and at level 2 prepared the payment page.
+  useEffect(() => {
+    const prepared = state.prepared;
+    if (!prepared) return;
+    setPanelError(""); setExpired(false);
+    setSelection({ rank: prepared.rank, cartId: prepared.cartId, verdict: prepared.verdict, approval: prepared.approval });
+    setReady(prepared.payment ? { ...prepared.payment, prepared: true } : null);
+    if (!prepared.verdict.pass) announceChange();
+  }, [state.prepared]);
+
+  async function verify(cartId: string, rank: number) {
+    const checked = await api("/api/verify", VerifyResult, { cartId });
+    setSelection({ rank, cartId, ...checked });
+    setExpired(false);
+    if (!checked.verdict.pass) announceChange();
+  }
+  async function act(work: () => Promise<void>) {
+    setBusy(true); setPanelError("");
+    try { await work(); }
+    catch (cause) { setPanelError(cause instanceof Error ? cause.message : "Something went wrong. Please try again."); }
+    finally { setBusy(false); }
+  }
+  const choose = (rank: number) => act(async () => {
+    setReady(null);
+    const { cart } = await api("/api/carts", CartResult, { contractId, rank });
+    await verify(cart.id, rank);
+  });
+  const approve = () => act(async () => {
+    if (!selection?.approval) return;
+    try {
+      const payment = await api("/api/approve", ApproveResult, { cartId: selection.cartId, approvalNonce: selection.approval.approvalNonce });
+      setReady({ ...payment, prepared: false });
+      setSelection(null);
+      announceChange();
+    } catch (cause) {
+      if (cause instanceof Error && /expired/i.test(cause.message)) setExpired(true);
+      throw cause;
+    }
+  });
+  const checkAgain = () => act(async () => { if (selection) await verify(selection.cartId, selection.rank); });
+  const editRule = () => act(async () => {
+    const { draftId } = await api(`/api/contracts/${contractId}/edit`, DraftIdResult, {});
+    router.push(`/contract/${draftId}`);
+  });
+  const closePanel = () => { setSelection(null); setReady(null); setPanelError(""); setExpired(false); };
 
   const cancel = () => { controller.current?.abort(); dispatch({ type: "cancelled" }); };
   const runAgain = () => setRunKey((key) => key + 1);
@@ -88,8 +145,16 @@ export default function ShopPage() {
       {state.status === "error" && <><p role="alert">{state.error}</p><button type="button" onClick={runAgain}>Try again</button></>}
     </section>
 
+    {ready && <PaymentReady {...ready} onClose={closePanel} />}
+    {!ready && selection && contract && (selection.verdict.pass && selection.approval
+      ? <ApprovalPanel title={result?.details.find((d) => d.rank === selection.rank)?.products.map((p) => p.title).join(" + ") ?? "Your order"}
+          totalCents={selection.verdict.totalCents} budgetCapCents={contract.contract.budgetCapCents} checks={approvalChecks(contract.contract)}
+          busy={busy} error={panelError} expired={expired} onApprove={approve} onNotNow={closePanel} onCheckAgain={checkAgain} />
+      : <BlockedPanel codes={selection.verdict.failures.map((f) => f.code)} busy={busy} error={panelError} onPickAnother={closePanel} onEditRule={editRule} />)}
+    {!selection && !ready && panelError && <p role="alert">{panelError}</p>}
     {result && (result.options.length
-      ? <section aria-labelledby="options-heading"><h2 id="options-heading">Options</h2><OptionCards result={result} open={open} onToggle={toggle} now={now} /></section>
+      ? <section aria-labelledby="options-heading"><h2 id="options-heading">Options</h2>
+          <OptionCards result={result} open={open} onToggle={toggle} now={now} onChoose={running ? undefined : choose} chooseDisabled={busy || !!selection || !!ready} /></section>
       : <p>Nothing at demo-store fits your contract right now.</p>)}
     {result && <CompareTableView result={result} />}
     <FilteredOut state={state} />

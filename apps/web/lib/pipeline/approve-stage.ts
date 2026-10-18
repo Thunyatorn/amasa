@@ -4,7 +4,7 @@ import { appendAudit } from "@amasa/audit";
 import { getDb } from "../db";
 import { getAutonomy } from "../db/autonomy";
 import { consumeNonce, getCart } from "../db/carts";
-import { getPurchaseStatus, spentThisWeekCents, transitionPurchase } from "../db/purchases";
+import { getPurchaseStatus, setAuditHead, spentThisWeekCents, transitionPurchase } from "../db/purchases";
 import { ApiError } from "../http";
 import { requestPaymentLink } from "../payments-client";
 
@@ -65,7 +65,9 @@ export async function approveCart(cartId: string, approvalNonce: string, nowMs =
 
   db.transaction(() => {
     transitionPurchase(db, fields.purchaseNumber, "approved", "link_created", outcome.paymentLinkUrl);
-    appendAudit(db, "payment_link_created", { purchaseNumber: fields.purchaseNumber, totalCents: fields.totalCents }, doneTs);
+    const { hash } = appendAudit(db, "payment_link_created", { purchaseNumber: fields.purchaseNumber, totalCents: fields.totalCents }, doneTs);
+    // The receipt shows the audit chain head at purchase time (SPEC §13).
+    setAuditHead(db, fields.purchaseNumber, hash);
   }).immediate();
   return { purchaseNumber: fields.purchaseNumber, paymentLinkUrl: outcome.paymentLinkUrl };
 }

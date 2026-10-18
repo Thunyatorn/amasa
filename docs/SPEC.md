@@ -310,6 +310,10 @@ export const ProgressEvent = z.discriminatedUnion("type", [
     removed: z.array(z.strictObject({ code: z.string(), count: z.number().int() })) }),
   z.strictObject({ type: z.literal("options"), options: z.array(Option).max(3), compare: CompareTable,
     details: z.array(OptionDetail).max(3), others: z.array(OtherSurvivor).max(12) }),
+  z.strictObject({ type: z.literal("prepared"), level: z.union([z.literal(1), z.literal(2)]), rank: z.number().int().min(1).max(3),
+    cartId: z.string().uuid(), verdict: Verdict,
+    approval: z.strictObject({ approvalNonce: z.string().min(1).max(100), expiresAt: z.number().int() }).nullable(),
+    payment: z.strictObject({ purchaseNumber: z.string().regex(/^[A-Z0-9]{16}$/), paymentLinkUrl: z.string().url() }).nullable() }),
   z.strictObject({ type: z.literal("error"), code: z.string(), message: z.string().max(200) }),
   z.strictObject({ type: z.literal("done") }),
 ]);
@@ -323,6 +327,10 @@ complaints), reviewQuotes (≤ 2 store review texts, ≤ 200 chars, shown labele
 plus code-written `checks` and `dataUsed` lines. `others` lists survivors the planner did not pick
 (`{ sku, title, totalCents, sponsored }`) for "Show more". All of it is built by code except `facts`
 and `reviewQuotes`, which are rendered as plain text.
+
+Added in M5: `prepared` is sent after `options` and before `done` when the category is at level 1
+or 2 (§5 "Level 1 and level 2"). It carries the same verdict and approval `/api/verify` returns for
+rank 1; at level 2 with a passing verdict, `approval` is consumed and `payment` holds the link.
 
 ---
 
@@ -392,7 +400,8 @@ CSRF cookie (double-submit). All bodies are zod-parsed; errors return
 | `POST /api/carts` | `{ contractId, rank }` | `{ cart }` | Builds the cart from the chosen option; audit `cart_created` |
 | `POST /api/verify` | `{ cartId }` | `{ verdict, approval: { approvalNonce, expiresAt } \| null }` | Stage 6 (§9); on pass signs the verdict server-side and issues a single-use nonce |
 | `POST /api/approve` | `{ cartId, approvalNonce }` | `{ purchaseNumber, paymentLinkUrl }` | Stage 7–8: re-reads autonomy, consumes nonce, calls payments (§10) |
-| `POST /api/outcomes` | `{ purchaseNumber, outcome: "kept" \| "returned", reason? }` | `{ purchase, suggestions: ProfileEntry[], autonomy }` | Stage 9 (§11, §12) |
+| `POST /api/outcomes` | `{ purchaseNumber, outcome: "kept" \| "returned", reason? }` | `{ purchase, suggestions: ProfileEntry[], autonomy }` | Stage 9 (§11, §12). `reason` required for `returned`, refused for `kept`. Only from `link_created`, once (otherwise 409 `OUTCOME_NOT_ALLOWED`). One transaction: status, audit `outcome_recorded`, autonomy, suggestions, notices |
+| `GET /api/purchases/[purchaseNumber]` | — | `{ purchase, failureCodes, lines, totals, contract, returnBy, auditHead, outcomeReason, suggestions, autonomy }` | Receipt data (added in M5). Lines and totals come from the cart's stored store quote; `returnBy` = created + the shortest return window, only once a link exists; `suggestions` = pending suggestions for the purchase's category |
 | `GET /api/profile` | — | `{ entries }` | |
 | `POST /api/profile` | `{ category, key, value }` | `{ entry }` | `source: user_edit`, `status: confirmed` |
 | `PATCH /api/profile/[id]` | `{ value }` | `{ entry }` | User edits an entry: `source: user_edit`, `status: confirmed` |
@@ -400,8 +409,12 @@ CSRF cookie (double-submit). All bodies are zod-parsed; errors return
 | `DELETE /api/profile/[id]` | — | `{ ok }` | "Forget" |
 | `GET /api/autonomy` | — | `{ states: AutonomyState[] }` | |
 | `POST /api/autonomy` | `{ category, level, weeklyCapCents? }` | `{ state }` | Raise only to `offeredLevel`; lowering always allowed; audit `autonomy_changed` |
-| `DELETE /api/me` | — | `{ ok }` | Deletes contracts, profile, autonomy, purchases (audit rows keep hashes only) |
+| `DELETE /api/me` | — | `{ ok }` | Deletes drafts, contracts, carts, options, purchases, profile, autonomy and notices in one transaction; audit rows keep hashes only (§13) |
 | `GET /api/audit/verify` | — | `{ ok, length, brokenAt: number \| null }` | §13 |
+| `GET /api/audit` | — | `{ check, entries: { seq, ts, type, erased }[] }` | Added in M5 for "Your history" in Settings: the chain check plus the latest 50 entries, no payloads |
+| `GET /api/notices` | — | `{ notices: { id, kind, text, createdAt }[] }` | Added in M5: change notices not yet dismissed (§16) |
+| `POST /api/notices/[id]/seen` | — | `{ ok }` | Added in M5: dismisses one notice |
+| `POST /api/contracts/[id]/edit` | — | `{ draftId }` | Added in M5 for "Edit the rule" (screen 6): copies the contract into a new draft for screen 2; the original contract is unchanged |
 
 `reason` in `/api/outcomes` is one of `too_small`, `too_large`, `not_as_described`,
 `changed_mind`, `other`.
@@ -410,6 +423,16 @@ Level 2 flow: when `/api/shop` runs for a category at level 2, the server picks 
 creates the cart, runs verify, and if it passes and the weekly cap holds, calls
 payments itself and emits a `step` event "Ready to pay: one tap". The user still
 completes the hosted payment page. This is code, not a model, so I1 holds.
+
+Level 1 and level 2 (as built in M5): after `options` is saved, `/api/shop` calls
+`lib/pipeline/prepare-stage.ts`, injected by the route so `lib/agent` never imports money code. It
+reads the level from the database (I7). Level 0: nothing. Level 1: cart and verify for rank 1, then a
+`prepared` event (§2.14) so the approval panel opens with one Approve. Level 2: the same, then, if the
+verdict passed, the normal approve path (the verifier's weekly-cap check is repeated inside approve,
+and the payments service re-checks the budget: I3), a `step` "Ready to pay: one tap", and
+`prepared` with the payment link. A block at level 1 or 2
+shows the blocked state and demotes (§11). If preparing fails, a `step` says so and the options stay
+choosable by hand.
 
 ---
 
@@ -802,6 +825,18 @@ Rules (code in `apps/web/lib/autonomy.ts`):
 - `/api/verify` and `/api/approve` read the current state from the database (I7).
 - These thresholds are design choices, not research results; keep them in one config object.
 
+As built in M5 (`AUTONOMY` in `apps/web/lib/autonomy.ts`: offer after 5, default weekly cap
+$150.00, allowed cap $1.00–$5,000.00):
+- Any level the user picks (accept, "No thanks", lower) clears `offeredLevel` and resets
+  `consecutiveGood` to 0, so a new offer needs 5 new kept orders. An offer is made once; it is not
+  repeated while one is pending.
+- "No thanks" is `POST /api/autonomy` with the current level. Raising past `offeredLevel` returns
+  409 `LEVEL_NOT_OFFERED`; a missing or out-of-range level-2 cap returns 409 `INVALID_WEEKLY_CAP`.
+- Every change (user-made or automatic) writes an audit `autonomy_changed { category, from, to,
+  offeredLevel, weeklyCapCents, reason }` and a change notice (§16) in the same transaction as the
+  change. A demotion after a block is written in the same transaction as the blocked purchase row,
+  and its notice names the first failed check in plain words.
+
 ---
 
 ## §12 Profile
@@ -819,6 +854,14 @@ Rules (code in `apps/web/lib/autonomy.ts`):
 
 - No entry is ever created from merchant content (I4).
 
+As built in M5: the size comes from the contract's `sizes_available includes X` rule (a store
+attribute the user confirmed), never from the product page. Brands come from the store listings,
+saved on the purchase when it is verified (`purchases.brands_json`). "Twice" counts outcomes in that
+category including the current one. A suggestion is skipped when an entry with the same category,
+key and value already exists. Keeping a suggestion (or editing an entry) replaces any other confirmed
+entry with the same category and key, each removal audited, so there is never both size 10.5 and
+size 11. Every profile change writes a change notice, except the demo seed's own entries.
+
 ---
 
 ## §13 Audit log (`packages/audit`)
@@ -831,7 +874,8 @@ Rules (code in `apps/web/lib/autonomy.ts`):
   `payment_link_created`, `payment_failed`, `outcome_recorded`, `autonomy_changed`,
   `profile_changed`.
 - `GET /api/audit/verify` recomputes the chain and returns the first broken `seq`.
-- Each receipt shows the chain head hash at purchase time.
+- Each receipt shows the chain head hash at purchase time (M5: the hash returned by the
+  `payment_link_created` append, stored in `purchases.audit_head`).
 - Verification checks two things for every row: the chain (`hash` and `prev_hash` link up),
   and, for rows with `erased = 0`, that `sha256(payload) === payload_hash`.
 - `DELETE /api/me` sets `payload = '{}'` and `erased = 1` but keeps every hash, so the chain
@@ -853,6 +897,12 @@ Added in M2: `carts.quote_json` (the quote snapshot `/api/approve` needs to buil
 `purchases.failure_codes` (a blocked row records its codes, §3), and
 `options(contract_id PK, json, flagged_json, created_at)`: the latest shopping run's options and
 flagged SKUs per contract, written by `/api/shop` (§7.4) and read by `/api/verify` for `flaggedSkus`.
+
+Added in M5: `purchases.audit_head` (§13), `purchases.brands_json` (default `'[]'`, for brand
+suggestions, §12), `purchases.outcome_reason` (the return reason), and
+`notices(id PK, json, created_at, seen)`: change notices (§16), written in the same transaction as the
+autonomy or profile change they describe. Columns are added on startup when missing, so an existing
+`amasa.db` keeps its data.
 
 `services/payments` uses its own `data/payments.db`:
 `payments(purchase_number TEXT PRIMARY KEY, status TEXT, total_cents INTEGER, result_json TEXT, created_at TEXT)`.
@@ -902,6 +952,11 @@ Each requirement traces to the research in the design doc's UX playbook tab.
 including an automatic demotion (§11), show an in-app notice saying what changed and why,
 with a link to `/settings`. [Amershi G14, G18]
 
+As built in M5: a banner in the root layout shows unseen notices (newest first, 3 at a time, "Show
+all (n)", Dismiss and "Dismiss all"). It refetches on every navigation and whenever a screen reports
+a change, so a notice appears on the screen where the change happened. Notice text is written by
+code only.
+
 Accessibility and styling rules are in `.claude/rules/ui.md`.
 
 ---
@@ -947,6 +1002,13 @@ checks the queries.
   appears; a second seed variant at level 1 with 5 more kept orders shows the level-2 offer.
 - Profile: `size = 10.5` (running-shoes, confirmed), `width = wide` (running-shoes, confirmed),
   one `suggested` entry so the Keep / Forget UI is visible.
+
+As built in M5: `pnpm seed` adds 5 kept groceries purchases (`SEEDGROCERY00001`–`05`, dated 9 or more
+days ago so they are outside the weekly-cap window, with brands) and sets groceries to `{ level 0,
+offeredLevel 1, consecutiveGood 5 }`. `pnpm seed -- level2` adds 10 and sets `{ level 1,
+offeredLevel 2, consecutiveGood 5 }`. Fixed purchase numbers make both safe to run again; the
+autonomy state is set through the normal code path (audit `autonomy_changed` with reason "demo seed",
+plus the offer notice).
 
 ### §17.4 Replay mode (`DEMO_REPLAY=true`)
 

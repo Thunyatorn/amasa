@@ -13,7 +13,7 @@ export const ContractResult = z.strictObject({ contract: Contract, contractHash:
 export const ConfirmInput = z.strictObject({ draftId: Id, draft: ContractDraft, acknowledgedUnsupported: z.literal(true).optional() });
 const ErrorResult = z.strictObject({ code: z.string(), message: z.string().min(1).max(500) });
 
-export async function api<S extends z.ZodType>(url: string, schema: S, body?: unknown, signal?: AbortSignal): Promise<z.infer<S>> {
+export async function api<S extends z.ZodType>(url: string, schema: S, body?: unknown, signal?: AbortSignal, method?: "DELETE" | "PATCH"): Promise<z.infer<S>> {
   const headers: Record<string, string> = {};
   // Every entry route can be opened directly, before a demo session exists.
   let sessionFailed = false;
@@ -22,16 +22,14 @@ export async function api<S extends z.ZodType>(url: string, schema: S, body?: un
     if (session.status >= 500) { sessionFailed = true; throw new Error(); }
     const token = z.strictObject({ token: z.string().min(1).max(256) }).safeParse(await session.json());
     if (!session.ok || !token.success) throw new Error();
-    if (body !== undefined) {
-      headers["content-type"] = "application/json";
-      headers["x-csrf-token"] = token.data.token;
-    }
+    if (body !== undefined) headers["content-type"] = "application/json";
+    if (body !== undefined || method) headers["x-csrf-token"] = token.data.token;
   } catch {
     throw new Error(sessionFailed ? "Something went wrong. Please try again." : "We couldn't start your session. Please reload the page and try again.");
   }
   let response: Response;
   try {
-    response = await fetch(url, { method: body === undefined ? "GET" : "POST", headers, credentials: "same-origin", cache: "no-store", signal, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
+    response = await fetch(url, { method: method ?? (body === undefined ? "GET" : "POST"), headers, credentials: "same-origin", cache: "no-store", signal, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
   } catch {
     throw new Error(url === "/api/intake" ? "I couldn't read that goal just now. Please try again." : "We couldn't connect. Please try again.");
   }

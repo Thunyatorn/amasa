@@ -38,7 +38,7 @@ describe("POST /api/shop", () => {
     const body = await response.text();
     expect(body.startsWith(`:${" ".repeat(1024)}\n\n`)).toBe(true);
     expect(body.endsWith('data: {"type":"step","text":"Reading your contract"}\n\ndata: {"type":"done"}\n\n')).toBe(true);
-    expect(shop.run).toHaveBeenCalledWith(ID, expect.any(Function), expect.any(AbortSignal));
+    expect(shop.run).toHaveBeenCalledWith(ID, expect.any(Function), expect.any(AbortSignal), { prepare: expect.any(Function) });
   });
 
   it("aborts the run when the client goes away", async () => {

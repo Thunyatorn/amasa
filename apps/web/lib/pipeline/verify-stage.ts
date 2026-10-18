@@ -4,7 +4,9 @@ import { cartHash, SignedFields, type StoreListing, type Verdict } from "@amasa/
 import { verify } from "@amasa/verifier";
 import { appendAudit } from "@amasa/audit";
 import { getDb } from "../db";
-import { getAutonomy } from "../db/autonomy";
+import { onBlocked } from "../autonomy";
+import { getAutonomy, getAutonomyState, recordAutonomyChange } from "../db/autonomy";
+import { failureClause } from "../failure-text";
 import { clearApproval, getCart, setApproval } from "../db/carts";
 import { getContract } from "../db/contracts";
 import { getOptions } from "../db/options";
@@ -60,13 +62,17 @@ export async function verifyCart(cartId: string): Promise<VerifyResult> {
   const purchaseNumber = newPurchaseNumber();
   const ts = new Date(now).toISOString();
   const codes = verdict.failures.map((f) => f.code);
+  const brands = Object.values(listings).map((listing) => listing.brand);
 
   if (!verdict.pass || quote === null) {
     db.transaction(() => {
       clearApproval(db, cart.id);
       insertPurchase(db, { purchaseNumber, cartId: cart.id, contractId: contract.id, category: contract.category,
-        status: "blocked", totalCents: verdict.totalCents, failureCodes: codes, now: ts });
+        status: "blocked", totalCents: verdict.totalCents, failureCodes: codes, now: ts, brands });
       appendAudit(db, "verdict", { cartId: cart.id, purchaseNumber, pass: false, totalCents: verdict.totalCents, codes }, ts);
+      // SPEC §11: a verifier block lowers the category's level by one and says why (change notice).
+      const before = getAutonomyState(db, contract.category, ts);
+      recordAutonomyChange(db, before, onBlocked(before, codes[0] ? failureClause(codes[0]) : "the store didn't confirm the price", ts), ts);
     }).immediate();
     return { verdict, approval: null };
   }
@@ -90,7 +96,7 @@ export async function verifyCart(cartId: string): Promise<VerifyResult> {
   db.transaction(() => {
     setApproval(db, cart.id, fields, signature, quote, approvalNonce);
     insertPurchase(db, { purchaseNumber, cartId: cart.id, contractId: contract.id, category: contract.category,
-      status: "verified", totalCents: quote.totalCents, failureCodes: [], now: ts });
+      status: "verified", totalCents: quote.totalCents, failureCodes: [], now: ts, brands });
     appendAudit(db, "verdict", { cartId: cart.id, purchaseNumber, pass: true, totalCents: quote.totalCents, codes: [] }, ts);
   }).immediate();
 

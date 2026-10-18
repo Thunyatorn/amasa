@@ -5,7 +5,8 @@ import { migrateAudit } from "@amasa/audit";
 import { databasePath } from "../env";
 
 // SPEC §14: data/amasa.db (better-sqlite3, WAL). Additions to §14, documented in the README:
-// carts.quote_json, purchases.failure_codes, the options table, and contract_drafts (M3).
+// carts.quote_json, purchases.failure_codes, the options table, contract_drafts (M3), and in M5
+// the notices table plus purchases.audit_head, purchases.brands_json and purchases.outcome_reason.
 
 export type Db = Database.Database;
 
@@ -28,13 +29,20 @@ export function migrate(db: Db): void {
       contract_id TEXT PRIMARY KEY, json TEXT NOT NULL, flagged_json TEXT NOT NULL, created_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS profile_entries (id TEXT PRIMARY KEY, json TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS autonomy (category TEXT PRIMARY KEY, json TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS notices (
+      id TEXT PRIMARY KEY, json TEXT NOT NULL, created_at TEXT NOT NULL, seen INTEGER NOT NULL DEFAULT 0);
   `);
-  // Databases created before unsupported_json existed get the column added in place.
-  const draftColumns = db.prepare("PRAGMA table_info(contract_drafts)").all() as { name: string }[];
-  if (!draftColumns.some((column) => column.name === "unsupported_json")) {
-    db.exec("ALTER TABLE contract_drafts ADD COLUMN unsupported_json TEXT NOT NULL DEFAULT '[]'");
-  }
+  // Databases created before these columns existed get them added in place.
+  addColumn(db, "contract_drafts", "unsupported_json", "TEXT NOT NULL DEFAULT '[]'");
+  addColumn(db, "purchases", "audit_head", "TEXT");
+  addColumn(db, "purchases", "brands_json", "TEXT NOT NULL DEFAULT '[]'");
+  addColumn(db, "purchases", "outcome_reason", "TEXT");
   migrateAudit(db);
+}
+
+function addColumn(db: Db, table: string, column: string, definition: string): void {
+  const columns = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
+  if (!columns.some((c) => c.name === column)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
 }
 
 export function openDb(path: string): Db {

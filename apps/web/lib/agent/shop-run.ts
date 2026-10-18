@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { sha256, type Contract, type ProductPage, type ProfileEntry, type ProgressEvent, type ReaderFacts, type StoreListing } from "@amasa/schemas";
+import { sha256, type Contract, type Option, type ProductPage, type ProfileEntry, type ProgressEvent, type ReaderFacts, type StoreListing } from "@amasa/schemas";
 import { readPage, sanitizeListing, scan, type PlannerListing } from "@amasa/reader";
 import { getDb, type Db } from "../db/index.ts";
 import { getContract } from "../db/contracts.ts";
@@ -42,6 +42,9 @@ export type ShopDeps = {
   now: () => number;
   log: (line: string) => void;
   runId: string;
+  // Level 1/2 preparation (SPEC §5), injected by the route so this model-calling module never imports
+  // money code. Called after the options are saved, before `done`.
+  prepare?: (contract: Contract, options: readonly Option[], emit: (event: ProgressEvent) => void, signal: AbortSignal) => Promise<void>;
 };
 
 const ERROR_MESSAGES = {
@@ -71,6 +74,7 @@ function configuredDeps(overrides: Partial<ShopDeps>): ShopDeps {
     now: overrides.now ?? Date.now,
     log: overrides.log ?? ((line) => console.info(line)),
     runId: overrides.runId ?? randomUUID().slice(0, 8),
+    ...(overrides.prepare ? { prepare: overrides.prepare } : {}),
   };
 }
 
@@ -213,6 +217,8 @@ export async function runShop(contractId: string, emit: (event: ProgressEvent) =
       details: buildDetails(contract, profile, options, checked),
       others: otherSurvivors(contract, options, survivors, STORE_PRICING),
     });
+    if (deps.prepare) await deps.prepare(contract, options, emit, run);
+    run.throwIfAborted();
     emit({ type: "done" });
     log(`shop ${runId} done options ${options.length} steps ${budget.steps} tokens ${budget.tokens}`);
   } catch (error) {

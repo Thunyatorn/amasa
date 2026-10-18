@@ -2,6 +2,7 @@ import type { ProgressEvent } from "./sse.ts";
 
 // Screen 3–4 state, built only from the run's events (SPEC §6). Pure, so it is tested directly.
 type OptionsEvent = Extract<ProgressEvent, { type: "options" }>;
+export type PreparedEvent = Extract<ProgressEvent, { type: "prepared" }>;
 export type ShopState = {
   status: "running" | "done" | "cancelled" | "error";
   steps: string[];
@@ -9,11 +10,12 @@ export type ShopState = {
   flagged: { sku: string; reason: string }[];
   removed: { code: string; count: number }[];
   result: OptionsEvent | null;
+  prepared: PreparedEvent | null;
   error: string | null;
 };
 export type ShopAction = { type: "start" } | { type: "event"; event: ProgressEvent } | { type: "cancelled" } | { type: "failed"; message: string };
 
-export const initialShopState: ShopState = { status: "running", steps: [], productsFound: null, flagged: [], removed: [], result: null, error: null };
+export const initialShopState: ShopState = { status: "running", steps: [], productsFound: null, flagged: [], removed: [], result: null, prepared: null, error: null };
 
 export function shopReducer(state: ShopState, action: ShopAction): ShopState {
   switch (action.type) {
@@ -33,6 +35,7 @@ export function shopReducer(state: ShopState, action: ShopAction): ShopState {
         case "flagged": return state.flagged.some((f) => f.sku === event.sku) ? state : { ...state, flagged: [...state.flagged, { sku: event.sku, reason: event.reason }] };
         case "filtered": return { ...state, removed: event.removed };
         case "options": return { ...state, result: event };
+        case "prepared": return { ...state, prepared: event };
         case "error": return { ...state, status: "error", error: event.message };
         case "done": return { ...state, status: "done" };
       }

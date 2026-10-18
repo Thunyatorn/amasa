@@ -96,6 +96,13 @@ describe("intake model boundary", () => {
     expect(result.draft.mustHave.some((rule) => rule.key === "color")).toBe(false);
   });
 
+  it("drops a separate 'returnable' rule when the contract already has a return window of at least 14 days", () => {
+    const returnable = { key: "returnable", op: "eq" as const, value: "yes" };
+    expect(normalizeDraft({ ...draft, mustHave: [...draft.mustHave, returnable] }, goal)).toMatchObject({ unsupported: [] });
+    expect(normalizeDraft({ ...draft, mustHave: [...draft.mustHave, returnable] }, goal).draft.mustHave.some((r) => r.key === "returnable")).toBe(false);
+    expect(normalizeDraft({ ...draft, minReturnDays: 0, mustHave: [returnable] }, goal).unsupported).toEqual([returnable]);
+  });
+
   it("drops a deadline the goal never asked for, and keeps one it did", () => {
     expect(normalizeDraft({ ...draft, deadline: "2026-10-18" }, goal).draft).not.toHaveProperty("deadline");
     for (const timed of ["wide shoes by Friday, under $140", "running shoes before 10/25", "shoes, need them next week", "shoes delivered in 3 days", "shoes by 2026-10-30"]) {

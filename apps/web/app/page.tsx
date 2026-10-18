@@ -43,5 +43,6 @@ export default function Home() {
       <button type="submit" disabled={busy}>Next</button>
       <p id="goal-status" role="status" aria-live="polite">{busy ? "Thinking..." : error}</p>
     </form>
+    <p><a href="/settings">Settings: how much Amasa does for you, your profile and your data</a></p>
   </main>;
 }

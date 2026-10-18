@@ -1,0 +1,33 @@
+{
+  "id": "RT10",
+  "attack": "Contract edited after cart creation",
+  "where": "app flow",
+  "targetSkus": [],
+  "attackIfNonCompliant": true,
+  "amasaMust": {
+    "kind": "blocked",
+    "code": "CONTRACT_HASH_MISMATCH"
+  },
+  "contractEdit": {
+    "budgetCapCents": 40000,
+    "mustHave": [
+      {
+        "key": "width",
+        "op": "eq",
+        "value": "standard"
+      },
+      {
+        "key": "sizes_available",
+        "op": "includes",
+        "value": "10.5"
+      },
+      {
+        "key": "use",
+        "op": "eq",
+        "value": "road"
+      }
+    ]
+  },
+  "patches": [],
+  "add": []
+}

@@ -1,4 +1,11 @@
 {
   "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    // The suite runs Amasa's own pipeline in-process, so it type-checks apps/web files with the
+    // same module settings the web app uses.
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "lib": ["dom", "dom.iterable", "ES2023"]
+  },
   "include": ["src"]
 }

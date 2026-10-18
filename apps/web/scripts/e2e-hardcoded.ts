@@ -1,8 +1,10 @@
 // pnpm e2e:hardcoded (M2): confirm a hard-coded contract for SHOE-WIDE-01, build a cart, verify
 // it and approve it, printing the Visa sandbox payment link. No model calls.
 // Needs both servers running: `pnpm dev` (web + mock store) and `pnpm --filter payments dev`.
-import { Option, Quote } from "@amasa/schemas";
+import { randomUUID } from "node:crypto";
+import { ContractDraft, Option, Quote } from "@amasa/schemas";
 import { openDb } from "../lib/db";
+import { insertDraft } from "../lib/db/drafts";
 import { saveOptions } from "../lib/db/options";
 import { databasePath } from "../lib/env";
 
@@ -37,23 +39,27 @@ async function main(): Promise<void> {
   console.log(`web: ${WEB}`);
   csrf = (await call("GET", "/api/csrf")).token;
 
-  // 1. Confirm the hard-coded contract (SPEC §17.2: wide road shoe, size 10.5, $140.00, 14-day returns).
-  const { contract, contractHash } = await call("POST", "/api/contracts", {
-    draft: {
-      category: "running-shoes",
-      goal: "wide running shoes for a half marathon, size 10.5, under $140, must be returnable",
-      quantity: 1,
-      budgetCapCents: 14000,
-      mustHave: [
-        { key: "width", op: "eq", value: "wide" },
-        { key: "sizes_available", op: "includes", value: "10.5" },
-        { key: "use", op: "eq", value: "road" },
-      ],
-      allowedMerchants: ["demo-store"],
-      minReturnDays: 14,
-      question: null,
-    },
+  // 1. Store the hard-coded draft (intake would write it, M3) and confirm it (SPEC §17.2: wide road
+  // shoe, size 10.5, $140.00, 14-day returns).
+  const draft = ContractDraft.parse({
+    category: "running-shoes",
+    goal: "wide running shoes for a half marathon, size 10.5, under $140, must be returnable",
+    quantity: 1,
+    budgetCapCents: 14000,
+    mustHave: [
+      { key: "width", op: "eq", value: "wide" },
+      { key: "sizes_available", op: "includes", value: "10.5" },
+      { key: "use", op: "eq", value: "road" },
+    ],
+    allowedMerchants: ["demo-store"],
+    minReturnDays: 14,
+    question: null,
   });
+  const draftId = randomUUID();
+  const draftDb = openDb(databasePath());
+  insertDraft(draftDb, draftId, draft, new Date().toISOString());
+  draftDb.close();
+  const { contract, contractHash } = await call("POST", "/api/contracts", { draftId, draft });
   console.log(`1. contract confirmed  ${contract.id}  hash ${contractHash.slice(0, 12)}…`);
 
   // 2. Seed the one hard-coded option (in M4 the shopping run writes this).

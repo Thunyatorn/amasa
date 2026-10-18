@@ -40,11 +40,13 @@ const AnthropicEnv = z.strictObject({
   MODEL_PROVIDER: z.literal("anthropic"),
   ANTHROPIC_API_KEY: z.string().trim().min(1),
   MODEL_PLANNER: z.string().trim().min(1),
+  MODEL_READER: z.string().trim().min(1).optional(),
 });
 const OllamaEnv = z.strictObject({
   MODEL_PROVIDER: z.literal("ollama"),
   OLLAMA_BASE_URL: z.string().url().default("http://127.0.0.1:11434/v1"),
   MODEL_PLANNER: z.string().trim().min(1),
+  MODEL_READER: z.string().trim().min(1).optional(),
 });
 export type ModelEnv = z.infer<typeof AnthropicEnv> | z.infer<typeof OllamaEnv>;
 let cachedModel: ModelEnv | undefined;
@@ -52,13 +54,35 @@ let cachedModel: ModelEnv | undefined;
 export function modelEnv(): ModelEnv {
   if (cachedModel) return cachedModel;
   const { MODEL_PROVIDER, ANTHROPIC_API_KEY, OLLAMA_BASE_URL, MODEL_PLANNER } = process.env;
+  // An empty MODEL_READER means "use the planner model for the reader too".
+  const MODEL_READER = process.env.MODEL_READER?.trim() || undefined;
   const parsed = MODEL_PROVIDER === "ollama"
-    ? OllamaEnv.safeParse({ MODEL_PROVIDER, OLLAMA_BASE_URL: OLLAMA_BASE_URL || undefined, MODEL_PLANNER })
-    : AnthropicEnv.safeParse({ MODEL_PROVIDER, ANTHROPIC_API_KEY, MODEL_PLANNER });
+    ? OllamaEnv.safeParse({ MODEL_PROVIDER, OLLAMA_BASE_URL: OLLAMA_BASE_URL || undefined, MODEL_PLANNER, MODEL_READER })
+    : AnthropicEnv.safeParse({ MODEL_PROVIDER, ANTHROPIC_API_KEY, MODEL_PLANNER, MODEL_READER });
   if (!parsed.success) {
     const variables = [...new Set(parsed.error.issues.map((issue) => issue.path.join(".")))];
     throw new Error(`Server configuration error: ${variables.join(", ")} must be configured (MODEL_PROVIDER must be anthropic or ollama; anthropic needs ANTHROPIC_API_KEY; MODEL_PLANNER must be non-empty; OLLAMA_BASE_URL, if set, must be a URL).`);
   }
   cachedModel = parsed.data;
   return cachedModel;
+}
+
+// Shopping-run limits (SPEC §7.4 step 8). MAX_STEPS counts planner model steps across both planner
+// turns; RUN_TOKEN_BUDGET counts the tokens of every model call in one run (planner and reader).
+const RunLimits = z.strictObject({
+  MAX_STEPS: z.coerce.number().int().min(2).max(50).default(10),
+  RUN_TOKEN_BUDGET: z.coerce.number().int().min(1000).max(2_000_000).default(150_000),
+});
+export type RunLimits = z.infer<typeof RunLimits>;
+
+export function runLimits(): RunLimits {
+  const parsed = RunLimits.safeParse({
+    MAX_STEPS: process.env.MAX_STEPS?.trim() || undefined,
+    RUN_TOKEN_BUDGET: process.env.RUN_TOKEN_BUDGET?.trim() || undefined,
+  });
+  if (!parsed.success) {
+    const variables = [...new Set(parsed.error.issues.map((issue) => issue.path.join(".")))];
+    throw new Error(`Server configuration error: ${variables.join(", ")} must be a whole number in range (MAX_STEPS 2–50, RUN_TOKEN_BUDGET 1000–2000000).`);
+  }
+  return parsed.data;
 }

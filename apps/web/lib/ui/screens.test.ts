@@ -12,7 +12,6 @@ vi.mock("react", async (original) => ({ ...await original<typeof import("react")
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: harness.push }), useParams: () => harness.params }));
 import Home from "../../app/page.tsx";
 import ContractPage from "../../app/contract/[id]/page.tsx";
-import ShopPage from "../../app/shop/[contractId]/page.tsx";
 import { api, ContractDraft, DraftResult, editedDraft, fieldsFromDraft } from "./contracts.ts";
 
 const draft = ContractDraft.parse({ category: "running-shoes", goal: "Wide shoes", quantity: 1, budgetCapCents: 14000, mustHave: [{ key: "width", op: "eq", value: "wide" }, { key: "sizes_available", op: "includes", value: "10.5" }, { key: "brand", op: "eq", value: "Example" }], allowedMerchants: ["demo-store"], minReturnDays: 30, question: null });
@@ -100,9 +99,6 @@ describe("draft validation", () => {
   });
   it("rejects malformed successful API data", async () => { mockFetch({ draft: { nope: true } }); await expect(api("/api/drafts/example", DraftResult)).rejects.toThrow("read the response"); });
 });
-it("renders the shop placeholder with the server-provided contract hash", async () => {
-  mockFetch({ contract: { ...(({ question: _, ...rest }) => rest)(draft), id: harness.params.id, confirmedAt: "2026-10-17T00:00:00.000Z" }, contractHash: "a".repeat(64) }); render(ShopPage); harness.effects[0]!(); await vi.waitFor(() => expect(harness.slots[0]).toBe("a".repeat(64))); const markup = renderToStaticMarkup(render(ShopPage) as never); expect(markup).toContain("Contract confirmed"); expect(markup).toContain("Shopping..."); expect(markup).toContain("a".repeat(64));
-});
 it("provides visible focus styles and AA text contrast in both themes", () => {
   const css = readFileSync(new URL("../../app/globals.css", import.meta.url), "utf8"); expect(css).toContain(":focus, :focus-visible"); expect(css).toContain("outline: 3px solid");
   const luminance = (hex: string) => { const channels = hex.match(/\w\w/g)!.map((part) => parseInt(part, 16) / 255).map((value) => value <= .04045 ? value / 12.92 : ((value + .055) / 1.055) ** 2.4); return channels[0]! * .2126 + channels[1]! * .7152 + channels[2]! * .0722; };
@@ -187,7 +183,7 @@ describe("M3 polish regressions", () => {
     expect(markup).toContain("I couldn&#x27;t read that goal just now. Please try again.");
     expect(markup).not.toContain("Thinking...");
   });
-  it("runs goal to review edits to the confirmed shop placeholder", async () => {
+  it("runs goal to review edits and lands on the shopping screen", async () => {
     const confirmed = { contract: { ...(({ question: _, ...rest }) => rest)(draft), budgetCapCents: 10025, id: harness.params.id, confirmedAt: "2026-10-17T00:00:00.000Z" }, contractHash: "b".repeat(64) };
     const fetch = vi.fn(async (url: string) => response(url === "/api/csrf" ? { token: "test-token" } : url === "/api/intake" ? { draftId: harness.params.id, draft } : url.startsWith("/api/drafts/") ? { draft } : confirmed));
     vi.stubGlobal("fetch", fetch);
@@ -199,9 +195,6 @@ describe("M3 polish regressions", () => {
     tree = render(ContractPage); event(find(tree, (node) => node.props.id === "budget"), "onChange", "100.25");
     tree = render(ContractPage); await event(find(tree, (node) => node.type === "form"), "onSubmit");
     expect(harness.push).toHaveBeenLastCalledWith(`/shop/${harness.params.id}`);
-    harness.slots = []; harness.effects = []; render(ShopPage); harness.effects[0]!();
-    await vi.waitFor(() => expect(harness.slots[0]).toBe(confirmed.contractHash));
-    expect(renderToStaticMarkup(render(ShopPage) as never)).toContain("Contract confirmed");
   });
 });
 

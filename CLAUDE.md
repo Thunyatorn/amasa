@@ -118,7 +118,7 @@ equivalent and say so.
 Ask instead of guessing about anything that touches the money path, signature
 formats, or the Visa toolkit's behavior.
 
-<!-- ## Delegation rule (saving Claude tokens)
+## Delegation rule (saving Claude tokens)
 
 - Do NOT write or edit code yourself. Delegate all implementation by running:
   `codex exec -s workspace-write -o /tmp/codex_out.txt "<task>" > /dev/null 2>&1; cat /tmp/codex_out.txt`
@@ -132,4 +132,4 @@ formats, or the Visa toolkit's behavior.
   (invariants I1–I7) before accepting it.
 - If Codex's result is wrong, send a follow-up with the specific fix. Don't fix it yourself.
 - Docs and README edits, git commits (user picks the message, no Claude co-author line) and running
-  commands stay with Claude. Keep replies to the user short. -->
+  commands stay with Claude. Keep replies to the user short.

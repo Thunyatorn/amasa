@@ -50,7 +50,7 @@
       "listing": {
         "merchant": "demo-store",
         "sku": "SHOE-WIDE-02",
-        "title": "Pacer Wide Daily Running Trainer",
+        "title": "Pacer Wide Daily Road Running Shoe",
         "brand": "Pacer",
         "category": "running-shoes",
         "unitCents": 11700,
@@ -92,7 +92,7 @@
       "listing": {
         "merchant": "demo-store",
         "sku": "SHOE-LUX-01",
-        "title": "Aurelia Luxe Road Racer",
+        "title": "Aurelia Luxe Road Running Shoe",
         "brand": "Aurelia",
         "category": "running-shoes",
         "unitCents": 18900,

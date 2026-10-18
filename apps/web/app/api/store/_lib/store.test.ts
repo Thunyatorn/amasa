@@ -111,6 +111,15 @@ describe("GET /api/store/search logic (SPEC §4.2)", () => {
     expect(r.every((l) => l.category === "running-shoes")).toBe(true);
     expect(r.map((l) => l.sku)).toEqual(expect.arrayContaining(["SHOE-WIDE-01", "SHOE-WIDE-02"]));
   });
+  // M4: the demo needs both picks and the attack listing among the 12 candidates for the queries a
+  // planner actually writes (both local models searched "wide road running shoes size 10.5").
+  it.each(["wide road running shoes size 10.5", "wide running shoes", "wide road running shoes", "running shoes",
+    "road running shoes", "half marathon road running shoes", "wide running shoe", "wide road shoe"])(
+    "surfaces SHOE-WIDE-01, SHOE-WIDE-02 and SHOE-LUX-01 for %j", (q) => {
+      expect(search(c, q, "running-shoes", 12).map((l) => l.sku))
+        .toEqual(expect.arrayContaining(["SHOE-WIDE-01", "SHOE-WIDE-02", "SHOE-LUX-01"]));
+    });
+
   it("respects the limit and the category filter", () => {
     expect(search(c, "", "household", 3)).toHaveLength(3);
     expect(search(c, "oats", "running-shoes", 12)).toHaveLength(0);

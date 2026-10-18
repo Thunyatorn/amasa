@@ -3,7 +3,7 @@ import { createAnthropic } from "@ai-sdk/anthropic";
 import { createOpenAI } from "@ai-sdk/openai";
 import { ContractDraft, ProfileEntry, Rule } from "@amasa/schemas";
 import { z } from "zod";
-import { modelEnv } from "../env.ts";
+import { modelEnv, type ModelEnv } from "../env.ts";
 import { ApiError } from "../http.ts";
 import { KNOWN_MERCHANTS } from "../merchants.ts";
 import { isStoreRule, STORE_ATTRIBUTES } from "../store-attributes.ts";
@@ -30,6 +30,11 @@ const IntakeInput = z.strictObject({
 
 const identity = (rule: Rule) => JSON.stringify([rule.key, rule.op, rule.value]);
 
+// A deadline is kept only when the goal itself talks about timing. Models were seen copying the
+// `today` date into `deadline` for goals with no date at all, which made every product miss it.
+const TIME_WORDS = /\b(by|before|until|till|deadline|due|need(ed)? (it|them)|arrive|deliver(ed|y)?|today|tonight|tomorrow|week(end)?|month|days?|monday|tuesday|wednesday|thursday|friday|saturday|sunday|jan(uary)?|feb(ruary)?|mar(ch)?|apr(il)?|june?|july?|aug(ust)?|sep(t(ember)?)?|oct(ober)?|nov(ember)?|dec(ember)?|christmas|birthday)\b|\d{1,2}[/-]\d{1,2}|\d{4}-\d{2}-\d{2}/i;
+export const mentionsTiming = (goal: string) => TIME_WORDS.test(goal);
+
 export function normalizeDraft(draft: ContractDraft, goal: string): IntakeResult {
   const parsed = ContractDraft.parse(draft);
   const kept = new Map<string, Rule>();
@@ -45,9 +50,11 @@ export function normalizeDraft(draft: ContractDraft, goal: string): IntakeResult
     if (isStoreRule(parsed.category, rule)) kept.set(identity(rule), rule);
     else unsupported.set(identity(original), original);
   }
+  const { deadline, ...rest } = parsed;
   return {
     draft: ContractDraft.parse({
-      ...parsed, goal: goal.trim().slice(0, 300), allowedMerchants: [...KNOWN_MERCHANTS], mustHave: [...kept.values()],
+      ...rest, ...(deadline !== undefined && mentionsTiming(goal) ? { deadline } : {}),
+      goal: goal.trim().slice(0, 300), allowedMerchants: [...KNOWN_MERCHANTS], mustHave: [...kept.values()],
     }),
     unsupported: [...unsupported.values()].slice(0, 8),
   };
@@ -72,7 +79,7 @@ export async function runIntake(
     const confirmedProfile = profile.map(({ category, key, value }) => ({ category, key, value }));
     const result = await generateText({
       model: deps.model,
-      system: INTAKE_SYSTEM_PROMPT,
+      instructions: INTAKE_SYSTEM_PROMPT,
       prompt: JSON.stringify({ goal, today, allowedMerchants: [...KNOWN_MERCHANTS], confirmedProfile, storeAttributes: STORE_ATTRIBUTES }),
       output: Output.object({ schema: ContractDraft }),
       temperature: 0,
@@ -88,17 +95,26 @@ export async function runIntake(
   }
 }
 
-export function modelFromEnv(): IntakeModel {
-  const config = modelEnv();
+function buildModel(config: ModelEnv, modelId: string): IntakeModel {
   if (config.MODEL_PROVIDER === "ollama") {
     return {
       // Ollama implements Chat Completions, not the Responses API, so .chat(). It ignores the key.
-      model: createOpenAI({ baseURL: config.OLLAMA_BASE_URL, apiKey: "ollama" }).chat(config.MODEL_PLANNER),
+      model: createOpenAI({ baseURL: config.OLLAMA_BASE_URL, apiKey: "ollama" }).chat(modelId),
       // Thinking off: with it on, local models took minutes and returned no answer (M3 test).
       providerOptions: { openai: { reasoningEffort: "none" } },
       // Loading a multi-GB model into memory on the first call can take a while.
       timeoutMs: 90_000,
     };
   }
-  return { model: createAnthropic({ apiKey: config.ANTHROPIC_API_KEY })(config.MODEL_PLANNER), timeoutMs: 30_000 };
+  return { model: createAnthropic({ apiKey: config.ANTHROPIC_API_KEY })(modelId), timeoutMs: 30_000 };
+}
+
+// Planner (also used by intake) and reader models from the environment.
+export function modelsFromEnv(): { planner: IntakeModel; reader: IntakeModel } {
+  const config = modelEnv();
+  return { planner: buildModel(config, config.MODEL_PLANNER), reader: buildModel(config, config.MODEL_READER ?? config.MODEL_PLANNER) };
+}
+
+export function modelFromEnv(): IntakeModel {
+  return modelsFromEnv().planner;
 }

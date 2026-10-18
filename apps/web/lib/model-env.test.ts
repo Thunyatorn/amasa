@@ -59,3 +59,29 @@ describe("local model through Ollama", () => {
     expect(remote.providerOptions).toBeUndefined();
   });
 });
+
+describe("reader model and run limits", () => {
+  it("uses MODEL_READER when set and the planner model when it is empty", async () => {
+    vi.resetModules();
+    vi.stubEnv("MODEL_PROVIDER", "ollama"); vi.stubEnv("MODEL_PLANNER", "gemma4:latest"); vi.stubEnv("MODEL_READER", "");
+    let models = (await import("./agent/intake.ts")).modelsFromEnv();
+    expect(models.reader.model).toMatchObject({ modelId: "gemma4:latest" });
+    vi.resetModules(); vi.stubEnv("MODEL_READER", "qwen3.5:9b");
+    models = (await import("./agent/intake.ts")).modelsFromEnv();
+    expect(models.planner.model).toMatchObject({ modelId: "gemma4:latest" });
+    expect(models.reader.model).toMatchObject({ modelId: "qwen3.5:9b" });
+    expect(models.reader.providerOptions).toEqual({ openai: { reasoningEffort: "none" } });
+  });
+
+  it("defaults MAX_STEPS to 10 and RUN_TOKEN_BUDGET to 150000, and names invalid values", async () => {
+    vi.stubEnv("MAX_STEPS", ""); vi.stubEnv("RUN_TOKEN_BUDGET", "");
+    const { runLimits } = await import("./env.ts");
+    expect(runLimits()).toEqual({ MAX_STEPS: 10, RUN_TOKEN_BUDGET: 150_000 });
+    vi.stubEnv("MAX_STEPS", "6"); vi.stubEnv("RUN_TOKEN_BUDGET", "50000");
+    expect(runLimits()).toEqual({ MAX_STEPS: 6, RUN_TOKEN_BUDGET: 50_000 });
+    vi.stubEnv("MAX_STEPS", "1");
+    expect(() => runLimits()).toThrow("MAX_STEPS");
+    vi.stubEnv("MAX_STEPS", "10"); vi.stubEnv("RUN_TOKEN_BUDGET", "lots");
+    expect(() => runLimits()).toThrow("RUN_TOKEN_BUDGET");
+  });
+});

@@ -36,3 +36,30 @@ legend { font-weight: 650; padding: 0 .35rem; }
 .check-field label { margin: 0; }
 .hash { font-family: monospace; overflow-wrap: anywhere; }
 @media (max-width: 480px) { .screen { margin: 1rem auto; } .field-grid { grid-template-columns: 1fr; } .chip { flex-wrap: wrap; } }
+.screen.wide { width: min(100% - 2rem, 64rem); }
+.card { border: 1px solid var(--border); border-radius: .5rem; padding: 1rem; margin-bottom: 1.5rem; }
+.contract-terms { margin: .5rem 0; padding-left: 1.2rem; }
+.summary { font-weight: 650; }
+.steps { padding-left: 1.4rem; }
+.steps li { margin: .2rem 0; }
+.options { list-style: none; padding: 0; display: grid; gap: 1rem; }
+.option { border: 1px solid var(--border); border-radius: .5rem; padding: 1rem; }
+.option h3 { margin: 0 0 .4rem; font-size: 1.15rem; }
+.sponsored { display: inline-block; border: 1px solid var(--border); border-radius: .3rem; padding: 0 .4rem; font-size: .85rem; margin: 0 0 .4rem; }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: .4rem 1rem; margin: .8rem 0; }
+.facts dt { font-weight: 650; }
+.facts dd { margin: 0; }
+.why { margin-top: .8rem; border-top: 1px solid var(--border); padding-top: .6rem; }
+.why h4 { margin: .8rem 0 .3rem; font-size: 1rem; }
+.quote { margin: .5rem 0; padding: .4rem .8rem; border-left: 3px solid var(--border); }
+.quote .label { margin: 0; font-size: .8rem; font-weight: 650; color: var(--muted); }
+.quote p { margin: .2rem 0; }
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; }
+caption { text-align: left; color: var(--muted); font-size: .9rem; padding-bottom: .4rem; }
+th, td { border: 1px solid var(--border); padding: .45rem .6rem; text-align: left; vertical-align: top; }
+tr.highlight th, tr.highlight td { background: color-mix(in srgb, var(--focus) 14%, var(--surface)); }
+.badge { font-weight: 650; font-size: .85rem; }
+.tradeoff { margin-top: .6rem; }
+.filtered { margin: 1.2rem 0; }
+.filtered summary { cursor: pointer; font-weight: 650; }

@@ -12,7 +12,7 @@ const request = (body: unknown, session = newSessionValue(), csrf = true) => new
   body: JSON.stringify(body),
 });
 
-beforeEach(() => stage.mockClear());
+beforeEach(() => { stage.mockClear(); });
 describe("POST intake", () => {
   it("requires a valid session and CSRF before running intake", async () => {
     expect((await POST(request({ goal: "shoes" }, "invalid"))).status).toBe(401);

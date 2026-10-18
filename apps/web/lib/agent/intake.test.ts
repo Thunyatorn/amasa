@@ -12,9 +12,9 @@ import { migrate, openDb } from "../db/index.ts";
 import { deleteDraft, getDraft, getDraftRecord } from "../db/drafts.ts";
 import { listProfileEntries } from "../db/profile.ts";
 import { intakeStage } from "./intake-stage.ts";
-import { INTAKE_SYSTEM_PROMPT } from "./prompts.ts";
+import { INTAKE_SYSTEM_PROMPT, PLANNER_SYSTEM_PROMPT } from "./prompts.ts";
 import { STORE_ATTRIBUTES } from "../store-attributes.ts";
-import { describeIntakeError, normalizeDraft, runIntake } from "./intake.ts";
+import { describeIntakeError, mentionsTiming, normalizeDraft, runIntake } from "./intake.ts";
 
 const goal = "wide running shoes for a half marathon, size 10.5, under $140, must be returnable";
 const draft: ContractDraft = {
@@ -47,6 +47,12 @@ describe("intake model boundary", () => {
     const spec = readFileSync(join(repoRoot(), "docs/SPEC.md"), "utf8");
     const block = spec.split("### §7.1 Intake (stage 1)")[1]!.split("```text\n")[1]!.split("\n```")[0];
     expect(INTAKE_SYSTEM_PROMPT).toBe(block);
+  });
+
+  it("keeps the planner prompt exactly equal to SPEC §7.2", () => {
+    const spec = readFileSync(join(repoRoot(), "docs/SPEC.md"), "utf8");
+    const block = spec.split("### §7.2 Planner (stages 2 and 5)")[1]!.split("```text\n")[1]!.split("\n```")[0];
+    expect(PLANNER_SYSTEM_PROMPT).toBe(block);
   });
 
   it("describes exactly the attributes present in the store for every category", () => {
@@ -88,6 +94,14 @@ describe("intake model boundary", () => {
     expect(result.draft.question).toBe("What is your budget?");
     expect(result.unsupported).toEqual([color]);
     expect(result.draft.mustHave.some((rule) => rule.key === "color")).toBe(false);
+  });
+
+  it("drops a deadline the goal never asked for, and keeps one it did", () => {
+    expect(normalizeDraft({ ...draft, deadline: "2026-10-18" }, goal).draft).not.toHaveProperty("deadline");
+    for (const timed of ["wide shoes by Friday, under $140", "running shoes before 10/25", "shoes, need them next week", "shoes delivered in 3 days", "shoes by 2026-10-30"]) {
+      expect(normalizeDraft({ ...draft, deadline: "2026-10-30" }, timed).draft.deadline).toBe("2026-10-30");
+    }
+    expect(mentionsTiming("Running shoes for a half marathon, under $140, must be returnable")).toBe(false);
   });
 
   it("maps only exact shoe sizes; a size range is reported instead of narrowed to one size", () => {

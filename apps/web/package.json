@@ -9,12 +9,14 @@
     "start": "next start --hostname 127.0.0.1 --port 3000",
     "typecheck": "next typegen && tsc --noEmit",
     "e2e:hardcoded": "tsx scripts/e2e-hardcoded.ts",
-    "check:intake": "node --env-file-if-exists=.env.local --import tsx scripts/intake-check.ts"
+    "check:intake": "node --env-file-if-exists=.env.local --import tsx scripts/intake-check.ts",
+    "e2e:shop": "tsx scripts/e2e-shop.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "4.0.82",
     "@ai-sdk/openai": "4.0.96",
     "@amasa/audit": "workspace:*",
+    "@amasa/reader": "workspace:*",
     "@amasa/schemas": "workspace:*",
     "@amasa/verifier": "workspace:*",
     "ai": "7.0.143",

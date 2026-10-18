@@ -308,11 +308,21 @@ export const ProgressEvent = z.discriminatedUnion("type", [
   z.strictObject({ type: z.literal("flagged"), sku: Sku, reason: z.string().max(140) }),
   z.strictObject({ type: z.literal("filtered"),
     removed: z.array(z.strictObject({ code: z.string(), count: z.number().int() })) }),
-  z.strictObject({ type: z.literal("options"), options: z.array(Option).max(3), compare: CompareTable }),
+  z.strictObject({ type: z.literal("options"), options: z.array(Option).max(3), compare: CompareTable,
+    details: z.array(OptionDetail).max(3), others: z.array(OtherSurvivor).max(12) }),
   z.strictObject({ type: z.literal("error"), code: z.string(), message: z.string().max(200) }),
   z.strictObject({ type: z.literal("done") }),
 ]);
 ```
+
+---
+
+Added in M4: `details` explains each option for screen 4: per product `{ sku, title, brand,
+sponsored, stock, rating, reviewCount, returnDays, deliveryDays, facts (the reader's fitNotes/praise/
+complaints), reviewQuotes (≤ 2 store review texts, ≤ 200 chars, shown labeled "Store review") }`,
+plus code-written `checks` and `dataUsed` lines. `others` lists survivors the planner did not pick
+(`{ sku, title, totalCents, sponsored }`) for "Show more". All of it is built by code except `facts`
+and `reviewQuotes`, which are rendered as plain text.
 
 ---
 
@@ -445,11 +455,17 @@ Use only the merchants listed by the system for allowedMerchants.
 Express every amount in integer cents.
 ```
 
+Code backstops after the model (M3/M4): the goal is the user's text, merchants are forced to the
+known list, an exact shoe size becomes `sizes_available includes`, rules the store cannot check go to
+a separate `unsupported` list shown on screen 2, and a `deadline` is kept only when the goal mentions
+timing (models were seen copying today's date into it).
+
 ### §7.2 Planner (stages 2 and 5)
 
 Tools (arguments validated with zod before execution):
 
 - `searchCatalog({ merchant: <enum of contract.allowedMerchants>, query: string (1–80 chars), category: Category })`
+  (M4: `category` is limited to the contract's own category; a run shops one category)
   → returns sanitized listings (§8.2), WITHOUT the `sponsored` field (so it neither boosts
   nor penalizes sponsorship; the UI labels sponsored items).
 - `proposeCart({ options: [{ lines: [{ sku, qty }], reason: string (max 120) }] (max 3) })`
@@ -470,6 +486,12 @@ If no candidate fits, call proposeCart with an empty options list.
 ```
 
 The contract and confirmed profile entries are sent as a JSON user message.
+
+Added in M4 (code behavior, the prompt above is unchanged): turn 1 ends after 3 searches or as soon as
+a step makes no search call; in turn 2 a `proposeCart` call that fails the schema goes back to the
+model as a tool error, and a prose answer gets one code-written reminder ("Call proposeCart now…"),
+all within `MAX_STEPS`. Measured on local models: `gemma4` cannot make the nested `proposeCart` call
+through Ollama (empty replies); `qwen3.5:9b` can.
 
 ### §7.3 Reader (stage 4)
 
@@ -508,6 +530,15 @@ User message: `<untrusted_page>{ProductPage JSON}</untrusted_page>`
 
 Reader output is used only for ranking and display. Must-have rules and money checks use
 only store fields, so a manipulated reader cannot make a product pass.
+
+M4 implementation notes: listings flagged in step 2 never become candidates; a page that cannot be
+read (missing, or the reader fails) is excluded like a flagged one; the scanner runs before the
+reader, so a flagged page is not sent to a model at all. The planner never receives
+`suspiciousSpans` or `injectionSuspected` (spans are copied page text, I4). The prefilter counts
+each removed product once, under the first rule it fails in this order: MERCHANT_NOT_ALLOWED,
+OUT_OF_STOCK, MUST_HAVE_FAILED, OVER_BUDGET, RETURN_WINDOW_SHORT, DEADLINE_MISSED. The trade-off
+compares the cheapest option with the best-ranked other option, so it reads the same whichever
+order the planner chose. Each run is logged per planner step (tool names and token totals only).
 
 ---
 
@@ -905,6 +936,11 @@ redistribution (**VERIFY**); otherwise write the 50 products by hand.
 
 Check the arithmetic in a test: $129.00 × 8% = $10.32; $117.00 × 8% = $9.36.
 
+M4: two titles were changed so realistic planner queries reach these products (the store returns at
+most 12, ranked by matched words): `SHOE-LUX-01` "Aurelia Luxe Road Running Shoe" and `SHOE-WIDE-02`
+"Pacer Wide Daily Road Running Shoe". Every value in the table above is unchanged; a store test
+checks the queries.
+
 ### §17.3 Seeds (`pnpm seed`)
 
 - 5 past `groceries` purchases, all `kept`, so `consecutiveGood = 5` and the level-1 offer
@@ -954,11 +990,12 @@ seconds from contract to payment link. Report the numbers exactly as measured.
 ## §19 Environment variables
 
 See `.env.example`. Web: `MODEL_PROVIDER`, the provider key (`ANTHROPIC_API_KEY` or
-`OPENAI_API_KEY`), `MODEL_PLANNER` (also used by intake, §7.1), `MODEL_READER`,
+`OPENAI_API_KEY`), `MODEL_PLANNER` (also used by intake, §7.1), `MODEL_READER` (empty = use `MODEL_PLANNER`),
 `OLLAMA_BASE_URL` (added in M3: `MODEL_PROVIDER=ollama` runs a local model through Ollama's
 OpenAI-compatible endpoint with `@ai-sdk/openai`, no key; default `http://127.0.0.1:11434/v1`), `SESSION_SECRET`,
 `VERIFIER_PRIVATE_KEY_B64`, `PAYMENTS_URL`, `STORE_BASE_URL`, `DATABASE_PATH`,
-`MAX_STEPS`, `RUN_TOKEN_BUDGET`, `DEMO_REPLAY`, `TAP_ENABLED`, `TAP_AGENT_PRIVATE_KEY_B64`,
+`MAX_STEPS` (default 10 planner steps per run), `RUN_TOKEN_BUDGET` (default 150000 tokens per run),
+`DEMO_REPLAY`, `TAP_ENABLED`, `TAP_AGENT_PRIVATE_KEY_B64`,
 `TAP_AGENT_PUBLIC_KEY_B64`. Payments: `VISA_ACCEPTANCE_MERCHANT_ID`,
 `VISA_ACCEPTANCE_API_KEY_ID`, `VISA_ACCEPTANCE_SECRET_KEY`, `VISA_ACCEPTANCE_ENVIRONMENT`,
 `VERIFIER_PUBLIC_KEY_B64`, `PAYMENTS_DB_PATH`, `PAYMENTS_MAX_DAILY_CENTS`, `PORT`.

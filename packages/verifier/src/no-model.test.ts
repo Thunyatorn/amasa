@@ -19,9 +19,9 @@ const MODEL_IMPORT = [
   /import\(\s*["'](ai|@ai-sdk\/[^"']+)["']\s*\)/,
 ];
 
-// The model-calling code lives in apps/web/lib/agent. Importing it reaches the AI SDK one step
-// removed, which MODEL_IMPORT alone cannot see, so the money path may not import it either.
-const AGENT_IMPORT = /(?:from\s+|import\s*\(\s*|import\s+|require\(\s*)["'][^"']*\/agent\/[^"']*["']/;
+// The model-calling code lives in apps/web/lib/agent and @amasa/reader. Importing either reaches the
+// AI SDK one step removed, which MODEL_IMPORT alone cannot see, so the money path may not import them.
+const AGENT_IMPORT = /(?:from\s+|import\s*\(\s*|import\s+|require\(\s*)["'](?:[^"']*\/agent\/[^"']*|@amasa\/reader(?:\/[^"']*)?)["']/;
 
 function tsFiles(dir: string): string[] {
   const out: string[] = [];
@@ -57,6 +57,7 @@ describe("no-model rule (SPEC §9.4)", () => {
     for (const line of [
       'import { runIntake } from "../agent/intake.ts";', 'import { intakeStage } from "../agent/intake-stage";',
       'const m = await import("../agent/intake.ts");', 'import "../agent/intake";',
+      'import { readPage } from "@amasa/reader";', 'import { scan } from "@amasa/reader/scanner";',
     ]) expect(AGENT_IMPORT.test(line), line).toBe(true);
     for (const line of ['import { getDb } from "../db/index.ts";', 'import { STORE_ATTRIBUTES } from "../store-attributes";'])
       expect(AGENT_IMPORT.test(line), line).toBe(false);

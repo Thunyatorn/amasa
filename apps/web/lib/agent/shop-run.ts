@@ -196,7 +196,7 @@ export async function runShop(contractId: string, emit: (event: ProgressEvent) =
     if (survivors.length) {
       const forPlanner: SurvivorForPlanner[] = survivors.map(({ listing, facts }) => {
         const { sponsored: _sponsored, ...visible } = listing;
-        return { ...visible, readerFacts: { fitNotes: facts.fitNotes, praise: facts.praise, complaints: facts.complaints } };
+        return { ...visible, readerFacts: { praise: facts.praise, complaints: facts.complaints } };
       });
       const seenOptions = new Set<string>();
       proposals = (await planner.propose(forPlanner)).filter((option) => {

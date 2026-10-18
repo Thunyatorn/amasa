@@ -6,10 +6,10 @@ import { CATEGORY_NAMES, LEVEL_NAMES } from "../../../lib/autonomy.ts";
 import { FAILURE_TEXT } from "../../../lib/failure-text.ts";
 import { api, ruleLabel } from "../../../lib/ui/contracts.ts";
 import { announceChange, EntryResult, OkResult, OutcomeResult, ReceiptResult, type ProfileEntry, type Receipt } from "../../../lib/ui/purchase-api.ts";
-import { money } from "../../shop/[contractId]/results.tsx";
+import { dollars, money } from "../../shop/[contractId]/results.tsx";
 
 const REASONS = [
-  ["too_small", "Too small"], ["too_large", "Too large"], ["not_as_described", "Not as described"],
+  ["not_as_described", "Not as described"],
   ["changed_mind", "Changed my mind"], ["other", "Other"],
 ] as const;
 const STATUS_TEXT: Record<string, string> = {
@@ -18,7 +18,7 @@ const STATUS_TEXT: Record<string, string> = {
 };
 const daysLeft = (isoDate: string, now: number) => Math.max(0, Math.ceil((Date.parse(`${isoDate}T23:59:59Z`) - now) / 86_400_000));
 
-// Screen 7 (SPEC §16): items, total, data used, return countdown, audit head, Kept / Returned (demo),
+// Screen 7 (SPEC §16): items, total, data used, refund-window countdown, audit head, Kept / Returned (demo),
 // and profile suggestions with Keep / Forget. No profile change happens without the user's tap.
 export default function ReceiptPage() {
   const { purchaseNumber } = useParams<{ purchaseNumber: string }>();
@@ -26,7 +26,7 @@ export default function ReceiptPage() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [returning, setReturning] = useState(false);
-  const [reason, setReason] = useState<string>("too_small");
+  const [reason, setReason] = useState<string>("not_as_described");
   const [message, setMessage] = useState("");
   const [now] = useState(() => Date.now());
 
@@ -74,10 +74,9 @@ export default function ReceiptPage() {
       {totals && <dl className="receipt-totals">
         <div><dt>Subtotal</dt><dd>{money(totals.subtotalCents)}</dd></div>
         <div><dt>Tax</dt><dd>{money(totals.taxCents)}</dd></div>
-        <div><dt>Shipping</dt><dd>{money(totals.shippingCents)}</dd></div>
-        <div className="receipt-grand-total"><dt>Total</dt><dd>{money(totals.totalCents)}</dd></div>
+        <div className="receipt-grand-total"><dt>Total</dt><dd>{money(totals.totalCents)} <span className="hint">(= {dollars(totals.totalCents)} at 1 VU = $1.00)</span></dd></div>
       </dl>}
-      {returnBy && <div className="return-information"><h3>Your return window</h3><p>Returns accepted until {returnBy} ({daysLeft(returnBy, now)} days left).</p></div>}
+      {returnBy && <div className="return-information"><h3>Your refund window</h3><p>Refunds accepted until {returnBy} ({daysLeft(returnBy, now)} days left).</p></div>}
     </section>
 
     {linked && purchase.paymentLinkUrl && <section className="panel" aria-labelledby="pay-heading"><h2 id="pay-heading">Payment</h2>
@@ -87,8 +86,8 @@ export default function ReceiptPage() {
 
     {contract && <section className="card" aria-labelledby="data-heading"><h2 id="data-heading">Data used</h2>
       <ul>
-        <li>Budget {money(contract.budgetCapCents)}, including tax and shipping</li>
-        <li>Quantity {contract.quantity}; returns at least {contract.minReturnDays} days{contract.deadline ? `; arrives by ${contract.deadline}` : ""}</li>
+        <li>Budget {money(contract.budgetCapCents)}, including tax</li>
+        <li>Quantity {contract.quantity}; refund window at least {contract.minReturnDays} days{contract.deadline ? `; by ${contract.deadline}` : ""}</li>
         {contract.mustHave.map((rule) => <li key={`${rule.key}-${rule.value}`}>{ruleLabel(rule)} {String(rule.value)}</li>)}
       </ul>
     </section>}

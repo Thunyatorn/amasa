@@ -21,9 +21,9 @@ const { dir } = vi.hoisted(() => {
 
 // The store and the payments service are external systems: mock their clients.
 const listing: StoreListing = {
-  merchant: "demo-store", sku: "SHOE-WIDE-01", title: "Stride Wide Road Running Shoe", brand: "Stride", category: "running-shoes",
+  merchant: "demo-store", sku: "CELEB-942", title: "Tom Hanks", brand: "Tom Hanks", category: "actors",
   unitCents: 12900, returnDays: 30, deliveryDays: 3, stock: 12, rating: 4.6, reviewCount: 214, sponsored: false,
-  attributes: { width: "wide", sizes_available: "8,9,10,10.5,11", use: "road" },
+  attributes: { oscar: "yes" },
 };
 const store = vi.hoisted(() => ({ unitCents: 12900 }));
 vi.mock("../store-client", () => ({
@@ -31,7 +31,7 @@ vi.mock("../store-client", () => ({
   fetchQuote: async (lines: Array<{ sku: string; qty: number }>): Promise<Quote> => {
     const p = priceLines([{ unitCents: store.unitCents, qty: lines[0]!.qty }], { taxRateBps: 800, freeShippingOverCents: 10000, flatShippingCents: 599 });
     return { quoteId: "q", merchant: "demo-store", currency: "USD",
-      lines: [{ sku: "SHOE-WIDE-01", title: listing.title, qty: lines[0]!.qty, unitCents: store.unitCents, lineCents: store.unitCents * lines[0]!.qty, returnDays: 30, deliveryDays: 3 }],
+      lines: [{ sku: "CELEB-942", title: listing.title, qty: lines[0]!.qty, unitCents: store.unitCents, lineCents: store.unitCents * lines[0]!.qty, returnDays: 30, deliveryDays: 3 }],
       ...p, quotedAt: Date.now() };
   },
 }));
@@ -67,8 +67,8 @@ import { confirmContract } from "./contract-stage";
 import { verifyCart } from "./verify-stage";
 
 const draft = {
-  category: "running-shoes" as const, goal: "wide road shoes", quantity: 1, budgetCapCents: 14000,
-  mustHave: [{ key: "width", op: "eq" as const, value: "wide" }, { key: "sizes_available", op: "includes" as const, value: "10.5" }],
+  category: "actors" as const, goal: "an Oscar winner", quantity: 1, budgetCapCents: 14000,
+  mustHave: [{ key: "oscar", op: "eq" as const, value: "yes" }],
   allowedMerchants: ["demo-store"], minReturnDays: 14, question: null,
 };
 
@@ -76,7 +76,7 @@ function freshCart(): { cartId: string; contractId: string } {
   const draftId = randomUUID();
   insertDraft(getDb(), draftId, draft, new Date().toISOString());
   const { contract } = confirmContract({ draftId, draft });
-  saveOptions(getDb(), contract.id, [{ rank: 1, lines: [{ sku: "SHOE-WIDE-01", qty: 1 }], reason: "test",
+  saveOptions(getDb(), contract.id, [{ rank: 1, lines: [{ sku: "CELEB-942", qty: 1 }], reason: "test",
     estimate: { totalCents: 13932, deliveryDays: 3, returnDays: 30 } }], [], new Date().toISOString());
   return { cartId: createCart(contract.id, 1).id, contractId: contract.id };
 }
@@ -86,8 +86,8 @@ async function linkedPurchase(): Promise<{ purchaseNumber: string; contractId: s
   const { purchaseNumber } = await approveCart(cartId, approval!.approvalNonce);
   return { purchaseNumber, contractId };
 }
-const setLevel = (level: number, weeklyCapCents = 0) => getDb().prepare("INSERT OR REPLACE INTO autonomy (category, json) VALUES ('running-shoes', ?)")
-  .run(JSON.stringify({ category: "running-shoes", level, offeredLevel: null, consecutiveGood: 3, weeklyCapCents, updatedAt: new Date().toISOString() }));
+const setLevel = (level: number, weeklyCapCents = 0) => getDb().prepare("INSERT OR REPLACE INTO autonomy (category, json) VALUES ('actors', ?)")
+  .run(JSON.stringify({ category: "actors", level, offeredLevel: null, consecutiveGood: 3, weeklyCapCents, updatedAt: new Date().toISOString() }));
 const code = async (p: Promise<unknown> | (() => unknown)) => {
   try { await (typeof p === "function" ? p() : p); return "OK"; } catch (e) { return e instanceof ApiError ? `${e.status} ${e.code}` : String(e); }
 };
@@ -104,8 +104,8 @@ describe("verifier blocks demote autonomy (SPEC §11)", () => {
     setLevel(2, 10_000);
     const { verdict } = await verifyCart(freshCart().cartId);
     expect(verdict.failures.map((f) => f.code)).toEqual(["WEEKLY_CAP_EXCEEDED"]);
-    expect(getAutonomyState(getDb(), "running-shoes")).toMatchObject({ level: 1, consecutiveGood: 0, offeredLevel: null });
-    expect(unseenNotices(getDb()).map((n) => n.text)).toEqual(["Running shoes lowered from level 2 (Prepare) to level 1 (Propose) because a check failed: this order would go over your weekly limit."]);
+    expect(getAutonomyState(getDb(), "actors")).toMatchObject({ level: 1, consecutiveGood: 0, offeredLevel: null });
+    expect(unseenNotices(getDb()).map((n) => n.text)).toEqual(["Actors lowered from level 2 (Prepare) to level 1 (Propose) because a check failed: this order would go over your weekly limit."]);
     const last = getDb().prepare("SELECT type, payload FROM audit ORDER BY seq DESC LIMIT 2").all() as { type: string; payload: string }[];
     expect(last.map((r) => r.type)).toEqual(["autonomy_changed", "verdict"]);
     expect(verifyAudit(getDb()).ok).toBe(true);
@@ -113,7 +113,7 @@ describe("verifier blocks demote autonomy (SPEC §11)", () => {
   it("uses the plain sentence for the first failed check", async () => {
     setLevel(1); store.unitCents = 15900;
     await verifyCart(freshCart().cartId);
-    expect(unseenNotices(getDb())[0]!.text).toContain("because a check failed: the total, including tax and shipping, is over your budget.");
+    expect(unseenNotices(getDb())[0]!.text).toContain("because a check failed: the total, including tax, is over your budget.");
   });
 });
 
@@ -123,42 +123,42 @@ describe("receipt data and outcomes (SPEC §5, §12, §13)", () => {
     const head = chainHead(getDb());
     const record = getPurchase(getDb(), purchaseNumber)!;
     expect(record.auditHead).toBe(head);
-    expect(record.brands).toEqual(["Stride"]);
+    expect(record.brands).toEqual(["Tom Hanks"]);
     const res = await purchaseGet(req("GET"), { params: Promise.resolve({ purchaseNumber }) });
     const body = await res.json();
     expect(body).toMatchObject({ purchase: { status: "link_created", totalCents: 13932 }, auditHead: head,
       totals: { subtotalCents: 12900, taxCents: 1032, shippingCents: 0, totalCents: 13932 },
-      lines: [{ sku: "SHOE-WIDE-01", title: "Stride Wide Road Running Shoe", qty: 1, unitCents: 12900 }] });
+      lines: [{ sku: "CELEB-942", title: "Tom Hanks", qty: 1, unitCents: 12900 }] });
     expect(body.returnBy).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 
-  it("returning a size-10.5 shoe as too small suggests size 11 with a code-written note and notice", async () => {
+  it("a return records the outcome once, audited, with no suggestion from a single order", async () => {
     const { purchaseNumber } = await linkedPurchase();
-    const result = recordOutcome({ purchaseNumber, outcome: "returned", reason: "too_small" });
+    const result = recordOutcome({ purchaseNumber, outcome: "returned", reason: "changed_mind" });
     expect(result.purchase.status).toBe("returned");
-    expect(result.suggestions).toEqual([expect.objectContaining({ category: "running-shoes", key: "size", value: 11, source: "returned",
-      status: "suggested", note: "You returned size 10.5 as too small" })]);
-    expect(unseenNotices(getDb()).map((n) => n.text)).toContain("Amasa suggests running shoes size 11 because you returned size 10.5 as too small. Keep or forget it on your receipt or in Settings.");
+    expect(result.suggestions).toEqual([]);
     expect(await code(() => recordOutcome({ purchaseNumber, outcome: "kept" }))).toBe("409 OUTCOME_NOT_ALLOWED");
-    const audit = getDb().prepare("SELECT type FROM audit ORDER BY seq DESC LIMIT 3").all() as { type: string }[];
-    expect(audit.map((r) => r.type)).toEqual(["profile_changed", "outcome_recorded", "payment_link_created"]);
+    const audit = getDb().prepare("SELECT type FROM audit ORDER BY seq DESC LIMIT 2").all() as { type: string }[];
+    expect(audit.map((r) => r.type)).toEqual(["outcome_recorded", "payment_link_created"]);
     expect(verifyAudit(getDb()).ok).toBe(true);
   });
 
-  it("too large suggests half a size down, and the same suggestion is never made twice", async () => {
-    const first = await linkedPurchase();
-    expect(recordOutcome({ purchaseNumber: first.purchaseNumber, outcome: "returned", reason: "too_large" }).suggestions[0]).toMatchObject({ value: 10 });
-    const second = await linkedPurchase();
-    expect(recordOutcome({ purchaseNumber: second.purchaseNumber, outcome: "returned", reason: "too_large" }).suggestions).toEqual([]);
-  });
-
-  it("kept twice for the same brand suggests brand_like; kept counts toward an offer", async () => {
+  it("kept twice with the same requirement suggests it as a preference, and the same celebrity as brand_like; never twice", async () => {
     const one = await linkedPurchase();
     expect(recordOutcome({ purchaseNumber: one.purchaseNumber, outcome: "kept" }).suggestions).toEqual([]);
     const two = await linkedPurchase();
     const result = recordOutcome({ purchaseNumber: two.purchaseNumber, outcome: "kept" });
-    expect(result.suggestions).toEqual([expect.objectContaining({ key: "brand_like", value: "Stride", note: "You kept Stride 2 times" })]);
+    expect(result.suggestions).toEqual([
+      expect.objectContaining({ category: "actors", key: "oscar", value: "yes", source: "kept", status: "suggested", note: "You kept 2 orders with oscar yes" }),
+      expect.objectContaining({ key: "brand_like", value: "Tom Hanks", note: "You kept Tom Hanks 2 times" }),
+    ]);
+    expect(unseenNotices(getDb()).map((n) => n.text)).toContain("Amasa suggests actors oscar yes because you kept 2 orders with oscar yes. Keep or forget it on your receipt or in Settings.");
     expect(result.autonomy).toMatchObject({ consecutiveGood: 2 });
+    const audit = getDb().prepare("SELECT type FROM audit ORDER BY seq DESC LIMIT 3").all() as { type: string }[];
+    expect(audit.map((r) => r.type)).toEqual(["profile_changed", "profile_changed", "outcome_recorded"]);
+    const three = await linkedPurchase();
+    expect(recordOutcome({ purchaseNumber: three.purchaseNumber, outcome: "kept" }).suggestions).toEqual([]);
+    expect(verifyAudit(getDb()).ok).toBe(true);
   });
 
   it("returned as not as described demotes; twice for a brand suggests brand_avoid", async () => {
@@ -167,7 +167,7 @@ describe("receipt data and outcomes (SPEC §5, §12, §13)", () => {
     expect(recordOutcome({ purchaseNumber: one.purchaseNumber, outcome: "returned", reason: "not_as_described" }).autonomy).toMatchObject({ level: 0 });
     const two = await linkedPurchase();
     expect(recordOutcome({ purchaseNumber: two.purchaseNumber, outcome: "returned", reason: "not_as_described" }).suggestions)
-      .toEqual([expect.objectContaining({ key: "brand_avoid", value: "Stride" })]);
+      .toEqual([expect.objectContaining({ key: "brand_avoid", value: "Tom Hanks" })]);
   });
 
   it("refuses outcomes before a payment link and checks the reason rule", async () => {
@@ -212,7 +212,7 @@ describe("level 1 and level 2 preparation (SPEC §5, §11)", () => {
     const draftId = randomUUID();
     insertDraft(getDb(), draftId, draft, new Date().toISOString());
     const { contract } = confirmContract({ draftId, draft });
-    const options: Option[] = [{ rank: 1, lines: [{ sku: "SHOE-WIDE-01", qty: 1 }], reason: "test", estimate: { totalCents: 13932, deliveryDays: 3, returnDays: 30 } }];
+    const options: Option[] = [{ rank: 1, lines: [{ sku: "CELEB-942", qty: 1 }], reason: "test", estimate: { totalCents: 13932, deliveryDays: 3, returnDays: 30 } }];
     saveOptions(getDb(), contract.id, options, [], new Date().toISOString());
     return { contract, options };
   }
@@ -252,7 +252,7 @@ describe("level 1 and level 2 preparation (SPEC §5, §11)", () => {
     const events = await run();
     expect(events).toEqual([expect.objectContaining({ type: "prepared", level: 2, verdict: expect.objectContaining({ pass: false }), approval: null, payment: null })]);
     expect(payCalls).toHaveLength(0);
-    expect(getAutonomyState(getDb(), "running-shoes").level).toBe(1);
+    expect(getAutonomyState(getDb(), "actors").level).toBe(1);
   });
 
   it("does nothing when the run was cancelled or there are no options", async () => {

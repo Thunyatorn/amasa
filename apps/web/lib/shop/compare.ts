@@ -5,9 +5,11 @@ import { stripUrgency } from "@amasa/reader";
 // SPEC §7.4 step 7: option estimates and the compare table are written by code; only `reason` comes
 // from the planner (urgency stripped, plain text).
 
-export const money = (cents: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
+import { vu as money } from "../vu.ts";
+
+export { money };
 const days = (n: number) => `${n} ${n === 1 ? "day" : "days"}`;
+const delivery = (n: number) => (n === 0 ? "Instant" : days(n));
 const OP_WORDS = { eq: "is", gte: "at least", lte: "at most", includes: "includes" } as const;
 
 export type Proposal = { lines: { sku: string; qty: number }[]; reason: string };
@@ -41,7 +43,7 @@ const relative = (values: number[]) => {
 };
 
 // The trade-off compares the cheapest option with the best-ranked other option, so it reads the same
-// whichever of the two the planner put first, e.g. "$12.96 cheaper but 14-day returns".
+// whichever of the two the planner put first, e.g. "43.20 VU cheaper but a 7-day refund window".
 export function tradeoff(options: readonly Option[], listings: ReadonlyMap<string, StoreListing>): string {
   if (options.length === 0) return "";
   if (options.length === 1) return "Only one product fits your contract.";
@@ -53,10 +55,10 @@ export function tradeoff(options: readonly Option[], listings: ReadonlyMap<strin
   if (saving <= 0) return "The options cost the same.";
   const downsides = [
     { size: c.delivery > r.delivery ? (c.delivery - r.delivery) / c.delivery : 0, phrase: `${c.delivery}-day delivery` },
-    { size: c.returns < r.returns ? (r.returns - c.returns) / r.returns : 0, phrase: `${c.returns}-day returns` },
+    { size: c.returns < r.returns ? (r.returns - c.returns) / r.returns : 0, phrase: `a ${c.returns}-day refund window` },
     { size: c.rating < r.rating ? (r.rating - c.rating) / r.rating : 0, phrase: `a ${c.rating.toFixed(1)} rating` },
   ].filter((d) => d.size > 0);
-  if (!downsides.length) return `${money(saving)} cheaper with no downside on delivery, returns or rating`;
+  if (!downsides.length) return `${money(saving)} cheaper with no downside on delivery, refunds or rating`;
   const worst = downsides.reduce((a, b) => (b.size > a.size ? b : a));
   return `${money(saving)} cheaper but ${worst.phrase}`;
 }
@@ -66,8 +68,8 @@ export function compareTable(options: readonly Option[], listings: ReadonlyMap<s
   const facts = ranked.map((option) => optionFacts(option, listings));
   const numeric = [
     { label: "Total", values: facts.map((f) => money(f.total)), size: relative(facts.map((f) => f.total)) },
-    { label: "Delivery", values: facts.map((f) => days(f.delivery)), size: relative(facts.map((f) => f.delivery)) },
-    { label: "Returns", values: facts.map((f) => days(f.returns)), size: relative(facts.map((f) => f.returns)) },
+    { label: "Delivery", values: facts.map((f) => delivery(f.delivery)), size: relative(facts.map((f) => f.delivery)) },
+    { label: "Refund window", values: facts.map((f) => days(f.returns)), size: relative(facts.map((f) => f.returns)) },
   ];
   const rating = { label: "Rating", values: ranked.map((option, i) => {
     const reviews = option.lines.length === 1 ? ` (${listings.get(option.lines[0]!.sku)!.reviewCount} reviews)` : "";

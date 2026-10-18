@@ -1,7 +1,8 @@
-// pnpm e2e:m5: the M5 acceptance checks over HTTP (BUILD_ORDER M5). Two live shopping runs (level 1
-// one-tap, then level 0 after lowering); the demotion and the shoe return use fixed carts so they
-// need no model. Needs `pnpm dev` or `pnpm --filter web start` (with the model variables) and
-// `pnpm --filter payments dev`. Creates two sandbox payment links (a grocery order and $139.32).
+// pnpm e2e:m5: the M5 acceptance checks over HTTP (BUILD_ORDER M5), in the celebrity store. Two live
+// shopping runs (level 1 one-tap, then level 0 after lowering); the demotion and the kept orders use
+// fixed carts so they need no model. Needs `pnpm dev` or `pnpm --filter web start` (with the model
+// variables) and `pnpm --filter payments dev`. Creates three sandbox payment links (a pop musician
+// and two Tom Brady orders at 125.28 VU = $125.28 each).
 import { randomUUID } from "node:crypto";
 import { ContractDraft, Option, ProgressEvent } from "@amasa/schemas";
 import { openDb } from "../lib/db";
@@ -85,10 +86,10 @@ async function main(): Promise<void> {
   handle.close();
   csrf = (await call("GET", "/api/csrf")).token;
 
-  console.log(`\n${at()}  1. After pnpm seed, groceries offers level 1; accepting makes the next order one tap`);
-  check("groceries shows a level-1 offer", (await autonomy("groceries")).offeredLevel === 1);
-  await call("POST", "/api/autonomy", { category: "groceries", level: 1 });
-  const intake = await call("POST", "/api/intake", { goal: "Rolled oats, under $20, must be returnable" });
+  console.log(`\n${at()}  1. After pnpm seed, musicians offers level 1; accepting makes the next order one tap`);
+  check("musicians shows a level-1 offer", (await autonomy("musicians")).offeredLevel === 1);
+  await call("POST", "/api/autonomy", { category: "musicians", level: 1 });
+  const intake = await call("POST", "/api/intake", { goal: "A pop musician, under 300 VU, must be refundable" });
   const { contract } = await call("POST", "/api/contracts", { draftId: intake.draftId, draft: { ...intake.draft, question: null },
     ...(intake.unsupported.length ? { acknowledgedUnsupported: true } : {}) });
   const first = await shop(contract.id);
@@ -100,8 +101,8 @@ async function main(): Promise<void> {
   }
 
   console.log(`\n${at()}  2. Lowering takes one tap and the very next purchase asks for approval`);
-  const lowered = await call("POST", "/api/autonomy", { category: "groceries", level: 0 });
-  check("one call lowers groceries to level 0", lowered.state.level === 0);
+  const lowered = await call("POST", "/api/autonomy", { category: "musicians", level: 0 });
+  check("one call lowers musicians to level 0", lowered.state.level === 0);
   const second = await shop(contract.id);
   check("the next run prepares nothing: the shopper picks and approves", second.some((e) => e.type === "options") && !second.some((e) => e.type === "prepared"));
 
@@ -109,30 +110,35 @@ async function main(): Promise<void> {
   const handle3 = db();
   seed(handle3, "level2");
   handle3.close();
-  await call("POST", "/api/autonomy", { category: "groceries", level: 2, weeklyCapCents: 100 });
-  const groceries = ContractDraft.parse({ category: "groceries", goal: "rolled oats", quantity: 1, budgetCapCents: 2000,
-    mustHave: [{ key: "type", op: "eq", value: "oats" }], allowedMerchants: ["demo-store"], minReturnDays: 14, question: null });
-  const blockedCart = await fixedCart(groceries, "GROC-OATS-01");
+  await call("POST", "/api/autonomy", { category: "musicians", level: 2, weeklyCapCents: 100 });
+  const musicians = ContractDraft.parse({ category: "musicians", goal: "a pop musician", quantity: 1, budgetCapCents: 30000,
+    mustHave: [{ key: "genre", op: "includes", value: "pop" }], allowedMerchants: ["demo-store"], minReturnDays: 14, question: null });
+  const blockedCart = await fixedCart(musicians, "CELEB-15");
   const blocked = await call("POST", "/api/verify", { cartId: blockedCart.cartId });
-  check("the verifier blocks it (weekly limit $1.00)", !blocked.verdict.pass && blocked.verdict.failures.some((f: { code: string }) => f.code === "WEEKLY_CAP_EXCEEDED"));
+  check("the verifier blocks it (weekly limit 1.00 VU)", !blocked.verdict.pass && blocked.verdict.failures.some((f: { code: string }) => f.code === "WEEKLY_CAP_EXCEEDED"));
   const notices: { text: string }[] = (await call("GET", "/api/notices")).notices;
-  const demotion = notices.find((n) => n.text.startsWith("Groceries lowered from level 2"));
+  const demotion = notices.find((n) => n.text.startsWith("Musicians lowered from level 2"));
   check(`notice: "${demotion?.text ?? "none"}"`, !!demotion && demotion.text.includes("because a check failed: this order would go over your weekly limit"));
-  check("groceries is now at level 1", (await autonomy("groceries")).level === 1);
+  check("musicians is now at level 1", (await autonomy("musicians")).level === 1);
 
-  console.log(`\n${at()}  4. Returning a size-10.5 shoe as too small suggests size 11 with Keep / Forget`);
-  const shoes = ContractDraft.parse({ category: "running-shoes", goal: "wide road running shoes, size 10.5", quantity: 1, budgetCapCents: 14000,
-    mustHave: [{ key: "width", op: "eq", value: "wide" }, { key: "sizes_available", op: "includes", value: "10.5" }, { key: "use", op: "eq", value: "road" }],
-    allowedMerchants: ["demo-store"], minReturnDays: 14, question: null });
-  const shoeCart = await fixedCart(shoes, "SHOE-WIDE-01");
-  const verified = await call("POST", "/api/verify", { cartId: shoeCart.cartId });
-  if (!verified.verdict.pass) throw new Error("The shoe cart did not pass verification");
-  const { purchaseNumber } = await call("POST", "/api/approve", { cartId: shoeCart.cartId, approvalNonce: verified.approval.approvalNonce });
-  const outcome = await call("POST", "/api/outcomes", { purchaseNumber, outcome: "returned", reason: "too_small" });
-  const suggestion = outcome.suggestions.find((s: { key: string }) => s.key === "size");
-  check(`suggested size ${suggestion?.value} ("${suggestion?.note}")`, suggestion?.value === 11 && suggestion.status === "suggested");
+  console.log(`\n${at()}  4. Keeping two Tom Brady orders suggests his sport and him as a favorite, with Keep / Forget`);
+  const athletes = ContractDraft.parse({ category: "athletes", goal: "an american football player", quantity: 1, budgetCapCents: 15000,
+    mustHave: [{ key: "sport", op: "eq", value: "american football" }], allowedMerchants: ["demo-store"], minReturnDays: 7, question: null });
+  let outcome: any = null;
+  let purchaseNumber = "";
+  for (let i = 0; i < 2; i++) {
+    const cart = await fixedCart(athletes, "CELEB-936");
+    const verified = await call("POST", "/api/verify", { cartId: cart.cartId });
+    if (!verified.verdict.pass) throw new Error(`The Tom Brady cart did not pass verification: ${verified.verdict.failures.map((f: { code: string }) => f.code).join(", ")}`);
+    purchaseNumber = (await call("POST", "/api/approve", { cartId: cart.cartId, approvalNonce: verified.approval.approvalNonce })).purchaseNumber;
+    outcome = await call("POST", "/api/outcomes", { purchaseNumber, outcome: "kept" });
+  }
+  const sport = outcome.suggestions.find((s: { key: string }) => s.key === "sport");
+  const favorite = outcome.suggestions.find((s: { key: string }) => s.key === "brand_like");
+  check(`suggested sport ${sport?.value} ("${sport?.note}")`, sport?.value === "american football" && sport.status === "suggested");
+  check(`suggested favorite ${favorite?.value} ("${favorite?.note}")`, favorite?.value === "Tom Brady" && favorite.status === "suggested");
   const receipt = await call("GET", `/api/purchases/${purchaseNumber}`);
-  check("the receipt lists it for Keep / Forget", receipt.suggestions.some((s: { id: string }) => s.id === suggestion?.id));
+  check("the receipt lists them for Keep / Forget", [sport, favorite].every((s: { id: string } | undefined) => receipt.suggestions.some((r: { id: string }) => r.id === s?.id)));
   console.log(`         receipt: ${WEB}/receipt/${purchaseNumber}`);
 
   console.log(`\n${at()}  5–6. Every FailureCode has a sentence; Approve and Not now weigh the same: covered by pnpm test (m5-screens.test.ts)`);

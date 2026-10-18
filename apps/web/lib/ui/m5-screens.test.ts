@@ -22,13 +22,13 @@ describe("every failure code has a plain sentence (SPEC §16 screen 6)", () => {
 });
 
 describe("approval panel (screen 5)", () => {
-  const panel = (expired = false) => html(createElement(ApprovalPanel, { title: "Stride Wide Road Running Shoe", totalCents: 13932, budgetCapCents: 14000,
-    checks: ["✓ width is wide"], busy: false, error: "", expired, onApprove: noop, onNotNow: noop, onCheckAgain: noop }));
+  const panel = (expired = false) => html(createElement(ApprovalPanel, { title: "Tom Hanks", totalCents: 29376, budgetCapCents: 30000,
+    checks: ["✓ oscar is yes"], busy: false, error: "", expired, onApprove: noop, onNotNow: noop, onCheckAgain: noop }));
   it("shows verifier-checked facts, the budget left and where the card is entered", () => {
     const markup = panel();
-    expect(markup).toContain("Total $139.32, including tax and shipping. $0.68 of your $140.00 budget left.");
+    expect(markup).toContain("Total 293.76 VU, including tax (= $293.76 at the demo rate of 1 VU = $1.00). 6.24 VU of your 300.00 VU budget left.");
     expect(markup).toContain("You&#x27;ll enter your card on Visa&#x27;s secure page.");
-    expect(markup).toContain("<li>✓ width is wide</li>");
+    expect(markup).toContain("<li>✓ oscar is yes</li>");
     expect(markup).not.toMatch(URGENCY);
   });
   it("gives Approve and Not now exactly the same weight", () => {
@@ -40,8 +40,8 @@ describe("approval panel (screen 5)", () => {
     expect(panel(true)).not.toContain(">Approve</button>");
   });
   it("lists what the verifier checked from the contract", () => {
-    expect(approvalChecks({ mustHave: [{ key: "width", op: "eq", value: "wide" }], minReturnDays: 14, quantity: 1, deadline: "2026-10-25" }))
-      .toEqual(expect.arrayContaining(["✓ width is wide", "✓ Returns: at least 14 days", "✓ Quantity: 1", "✓ Arrives by 2026-10-25"]));
+    expect(approvalChecks({ mustHave: [{ key: "oscar", op: "eq", value: "yes" }], minReturnDays: 14, quantity: 1, deadline: "2026-10-25" }))
+      .toEqual(expect.arrayContaining(["✓ oscar is yes", "✓ Refund window: at least 14 days", "✓ Quantity: 1", "✓ Delivered by 2026-10-25"]));
   });
 });
 

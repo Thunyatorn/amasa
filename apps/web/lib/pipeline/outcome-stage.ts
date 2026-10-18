@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
-import { ProfileEntry, type AutonomyState, type Contract, type Purchase } from "@amasa/schemas";
+import { ProfileEntry, type AutonomyState, type Contract, type Purchase, type Rule } from "@amasa/schemas";
 import { appendAudit } from "@amasa/audit";
 import { onKept, onReturned, type ReturnReason } from "../autonomy";
 import { getDb } from "../db";
@@ -9,39 +9,42 @@ import { getContract } from "../db/contracts";
 import { describeEntry, insertProfileEntry, listProfileEntries } from "../db/profile";
 import { getPurchase, purchasesWithOutcome, setOutcomeReason, transitionPurchase } from "../db/purchases";
 import { ApiError } from "../http";
+import { isStoreRule } from "../store-attributes";
 
-const Reason = z.enum(["too_small", "too_large", "not_as_described", "changed_mind", "other"]);
+const Reason = z.enum(["not_as_described", "changed_mind", "other"]);
 export const OutcomeBody = z.strictObject({
   purchaseNumber: z.string().regex(/^[A-Z0-9]{16}$/),
   outcome: z.enum(["kept", "returned"]),
   reason: Reason.optional(),
 }).refine((body) => (body.outcome === "returned") === (body.reason !== undefined), { message: "A reason is required for a return, and only for a return." });
 
-const BRAND_REPEATS = 2;
+const REPEATS = 2;
+const ruleId = (rule: Rule) => JSON.stringify([rule.key, rule.op, String(rule.value).toLowerCase()]);
 
 type Candidate = Pick<ProfileEntry, "category" | "key" | "value" | "source" | "note">;
 
-// SPEC §12 suggestion rules. Everything here comes from our own records (the contract, the order's
-// outcome and the store's structured brand field), never from page text (I4).
+// SPEC §12 suggestion rules. Everything here comes from our own records (the confirmed contracts,
+// the orders' outcomes and the store's structured name field), never from page text (I4). In the
+// celebrity store a "brand" is the celebrity's name.
 function suggestionsFor(contract: Contract, purchase: { brands: string[] }, outcome: "kept" | "returned", reason: ReturnReason | undefined,
-  history: { kept: { brands: string[] }[]; returned: { brands: string[]; outcomeReason: string | null }[] }): Candidate[] {
+  history: { kept: { brands: string[]; rules: Rule[] }[]; returned: { brands: string[]; outcomeReason: string | null }[] }): Candidate[] {
   const out: Candidate[] = [];
-  if (outcome === "returned" && (reason === "too_small" || reason === "too_large")) {
-    const sizeRule = contract.mustHave.find((rule) => rule.key === "sizes_available" && rule.op === "includes");
-    const size = sizeRule ? Number(sizeRule.value) : NaN;
-    if (Number.isFinite(size)) {
-      out.push({ category: contract.category, key: "size", value: size + (reason === "too_small" ? 0.5 : -0.5), source: "returned",
-        note: `You returned size ${size} as too ${reason === "too_small" ? "small" : "large"}` });
+  if (outcome === "kept") {
+    // A requirement the user kept asking for (e.g. genre includes pop) becomes a suggested preference.
+    for (const rule of contract.mustHave.filter((r) => isStoreRule(contract.category, r))) {
+      const times = history.kept.filter((p) => p.rules.some((r) => ruleId(r) === ruleId(rule))).length;
+      const value = typeof rule.value === "string" ? rule.value.toLowerCase() : rule.value;
+      if (times >= REPEATS) out.push({ category: contract.category, key: rule.key, value, source: "kept", note: `You kept ${times} orders with ${rule.key.replaceAll("_", " ")} ${value}` });
     }
   }
   for (const brand of purchase.brands) {
     if (outcome === "kept") {
       const times = history.kept.filter((p) => p.brands.includes(brand)).length;
-      if (times >= BRAND_REPEATS) out.push({ category: contract.category, key: "brand_like", value: brand, source: "kept", note: `You kept ${brand} ${times} times` });
+      if (times >= REPEATS) out.push({ category: contract.category, key: "brand_like", value: brand, source: "kept", note: `You kept ${brand} ${times} times` });
     }
     if (outcome === "returned" && reason === "not_as_described") {
       const times = history.returned.filter((p) => p.outcomeReason === "not_as_described" && p.brands.includes(brand)).length;
-      if (times >= BRAND_REPEATS) out.push({ category: contract.category, key: "brand_avoid", value: brand, source: "returned", note: `You returned ${brand} as not as described ${times} times` });
+      if (times >= REPEATS) out.push({ category: contract.category, key: "brand_avoid", value: brand, source: "returned", note: `You returned ${brand} as not as described ${times} times` });
     }
   }
   return out;
@@ -74,7 +77,8 @@ export function recordOutcome(input: z.infer<typeof OutcomeBody>, now = new Date
     const suggestions: ProfileEntry[] = [];
     if (stored) {
       const candidates = suggestionsFor(stored.contract, record, outcome, reason, {
-        kept: purchasesWithOutcome(db, record.purchase.category, "kept"),
+        kept: purchasesWithOutcome(db, record.purchase.category, "kept")
+          .map((p) => ({ brands: p.brands, rules: getContract(db, p.purchase.contractId)?.contract.mustHave ?? [] })),
         returned: purchasesWithOutcome(db, record.purchase.category, "returned"),
       });
       for (const candidate of candidates) {

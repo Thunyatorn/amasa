@@ -50,7 +50,7 @@ describe("pricing (SPEC §4.1, §17.2)", () => {
 
 describe("schemas are strict", () => {
   const contract = {
-    id: "11111111-1111-4111-8111-111111111111", category: "running-shoes", goal: "shoes",
+    id: "11111111-1111-4111-8111-111111111111", category: "actors", goal: "shoes",
     quantity: 1, budgetCapCents: 14000, mustHave: [], allowedMerchants: ["demo-store"],
     minReturnDays: 14, confirmedAt: "2026-10-17T11:00:00.000Z",
   };
@@ -63,7 +63,7 @@ describe("schemas are strict", () => {
   });
   it("rejects bad SKUs and attribute keys in listings", () => {
     const listing = {
-      merchant: "demo-store", sku: "SHOE-WIDE-01", title: "t", brand: "b", category: "running-shoes",
+      merchant: "demo-store", sku: "SHOE-WIDE-01", title: "t", brand: "b", category: "actors",
       unitCents: 12900, returnDays: 30, deliveryDays: 3, stock: 1, rating: 4, reviewCount: 1,
       sponsored: false, attributes: { width: "wide" },
     };

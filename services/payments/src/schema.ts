@@ -4,7 +4,7 @@ import { z } from "zod";
 // Kept identical to packages/schemas/src/payment.ts; schema-parity.test.ts checks they agree.
 // (zod 3 has no z.strictObject; .strict() is the equivalent.)
 
-const Category = z.enum(["running-shoes", "groceries", "household"]);
+const Category = z.enum(["actors", "musicians", "athletes"]);
 const Sku = z.string().regex(/^[A-Z0-9-]{3,24}$/);
 
 export const SignedFields = z.object({

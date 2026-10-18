@@ -7,16 +7,20 @@ import type { Catalog } from "./catalog";
 
 export const MAX_LIMIT = 12;
 
-const tokens = (s: string) => s.toLowerCase().split(/[^a-z0-9.]+/).filter((t) => t.length > 0);
+// Lowercase words; a trailing plural "s" is dropped so "actors" matches "actor".
+const tokens = (s: string) => s.toLowerCase().split(/[^a-z0-9.]+/).filter((t) => t.length > 0)
+  .map((t) => (t.length > 3 && t.endsWith("s") && !t.endsWith("ss") ? t.slice(0, -1) : t));
 
-// Naive keyword match on title, brand and attribute values, filtered by category; ranked by how
-// many query words match, then by SKU for a stable order.
+// Naive keyword match on the name, category, description, attribute values, and the names of yes/no
+// attributes that are "yes" (so "oscar" finds Oscar winners), filtered by category; ranked by how many
+// query words match, then by SKU for a stable order.
 export function search(c: Catalog, q: string, category: string | null, limit: number): StoreListing[] {
   const words = [...new Set(tokens(q))];
   const scored: Array<{ l: StoreListing; score: number }> = [];
-  for (const { listing: l } of c.products) {
+  for (const { listing: l, page } of c.products) {
     if (category && l.category !== category) continue;
-    const hay = new Set(tokens([l.title, l.brand, ...Object.values(l.attributes).map(String)].join(" ")));
+    const yes = Object.entries(l.attributes).filter(([, v]) => String(v).toLowerCase() === "yes").map(([k]) => k);
+    const hay = new Set(tokens([l.title, l.brand, l.category, page.description, ...Object.values(l.attributes).map(String), ...yes].join(" ")));
     const score = words.length ? words.filter((w) => hay.has(w)).length : 1;
     if (score > 0) scored.push({ l, score });
   }

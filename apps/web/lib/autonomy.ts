@@ -1,11 +1,12 @@
 import type { AutonomyState, Category } from "@amasa/schemas";
+import { vu as money } from "./vu.ts";
 
 // SPEC §11 "earned autonomy". Pure rules: every function takes the current state and returns the
 // next one plus a code-written notice (null when nothing the user can see changed). The thresholds
 // are design choices, not research results, so they live in this one object.
 export const AUTONOMY = {
   offerAfterGood: 5,
-  defaultWeeklyCapCents: 15_000,
+  defaultWeeklyCapCents: 100_000,
   minWeeklyCapCents: 100,
   maxWeeklyCapCents: 500_000,
 } as const;
@@ -17,13 +18,12 @@ export const LEVEL_DESCRIPTIONS: Record<Level, string> = {
   1: "Amasa picks the best option and checks it for you. One tap approves it.",
   2: "Amasa picks, checks and prepares the payment link within your weekly limit. You still pay on Visa's page.",
 };
-export const CATEGORY_NAMES: Record<Category, string> = { "running-shoes": "Running shoes", groceries: "Groceries", household: "Household" };
+export const CATEGORY_NAMES: Record<Category, string> = { actors: "Actors", musicians: "Musicians", athletes: "Athletes" };
 
-export type ReturnReason = "too_small" | "too_large" | "not_as_described" | "changed_mind" | "other";
+export type ReturnReason = "not_as_described" | "changed_mind" | "other";
 export type Change = { state: AutonomyState; notice: string | null; reason: string };
 
 const levelText = (level: Level) => `level ${level} (${LEVEL_NAMES[level]})`;
-const money = (cents: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
 
 export function defaultState(category: Category, now: string): AutonomyState {
   return { category, level: 0, offeredLevel: null, consecutiveGood: 0, weeklyCapCents: 0, updatedAt: now };

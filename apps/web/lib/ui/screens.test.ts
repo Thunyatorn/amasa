@@ -14,7 +14,7 @@ import Home from "../../app/page.tsx";
 import ContractPage from "../../app/contract/[id]/page.tsx";
 import { api, ContractDraft, DraftResult, editedDraft, fieldsFromDraft } from "./contracts.ts";
 
-const draft = ContractDraft.parse({ category: "running-shoes", goal: "Wide shoes", quantity: 1, budgetCapCents: 14000, mustHave: [{ key: "width", op: "eq", value: "wide" }, { key: "sizes_available", op: "includes", value: "10.5" }, { key: "brand", op: "eq", value: "Example" }], allowedMerchants: ["demo-store"], minReturnDays: 30, question: null });
+const draft = ContractDraft.parse({ category: "musicians", goal: "A pop musician", quantity: 1, budgetCapCents: 25000, mustHave: [{ key: "genre", op: "includes", value: "pop" }, { key: "brand", op: "eq", value: "Example" }], allowedMerchants: ["demo-store"], minReturnDays: 30, question: null });
 function render(component: () => unknown) { harness.cursor = 0; return component() as Element; }
 type Element = { type: unknown; props: Record<string, unknown> & { children?: unknown } };
 function elements(node: unknown): Element[] { if (Array.isArray(node)) return node.flatMap(elements); if (!node || typeof node !== "object" || !("props" in node)) return []; const element = node as Element; return [element, ...elements(element.props.children)]; }
@@ -42,7 +42,7 @@ describe("goal screen", () => {
     const fetch = mockFetch({ draftId: harness.params.id, draft }); let tree = render(Home);
     event(find(tree, (node) => node.props.className === "secondary"), "onClick"); tree = render(Home);
     await event(find(tree, (node) => node.type === "form"), "onSubmit");
-    expect(fetch).toHaveBeenLastCalledWith("/api/intake", expect.objectContaining({ method: "POST", headers: { "content-type": "application/json", "x-csrf-token": "test-token" }, body: expect.stringContaining("Wide running shoes") }));
+    expect(fetch).toHaveBeenLastCalledWith("/api/intake", expect.objectContaining({ method: "POST", headers: { "content-type": "application/json", "x-csrf-token": "test-token" }, body: expect.stringContaining("Oscar-winning actor") }));
     expect(harness.push).toHaveBeenCalledWith(`/contract/${harness.params.id}`);
   });
   it.each(["abc", "a".repeat(300)])("accepts goal length boundaries", async (goal) => {
@@ -52,16 +52,17 @@ describe("goal screen", () => {
   });
   it("keeps the goal and displays the API message on failure", async () => {
     mockFetch({ code: "INTAKE_FAILED", message: "Please try again." }, false); let tree = render(Home);
-    event(find(tree, (node) => node.props.id === "goal"), "onChange", "Wide shoes"); tree = render(Home); await event(find(tree, (node) => node.type === "form"), "onSubmit"); tree = render(Home);
-    expect(find(tree, (node) => node.props.id === "goal").props.value).toBe("Wide shoes"); expect(renderToStaticMarkup(tree as never)).toContain("Please try again.");
+    event(find(tree, (node) => node.props.id === "goal"), "onChange", "A pop musician"); tree = render(Home); await event(find(tree, (node) => node.type === "form"), "onSubmit"); tree = render(Home);
+    expect(find(tree, (node) => node.props.id === "goal").props.value).toBe("A pop musician"); expect(renderToStaticMarkup(tree as never)).toContain("Please try again.");
   });
 });
 describe("contract screen", () => {
   it("renders without crashing and has labels for every editable control", async () => {
     const tree = await loadContract(); const markup = renderToStaticMarkup(tree as never); expect(markup).toMatchSnapshot();
-    for (const id of ["budget", "quantity", "returns", "deadline", "width", "size"]) expect(markup).toContain(`for="${id}"`);
-    expect(find(tree, (node) => node.props.id === "budget").props.value).toBe("140.00");
-    expect(find(tree, (node) => node.props.id === "width").type).toBe("select");
+    for (const id of ["budget", "quantity", "returns", "deadline", "choice"]) expect(markup).toContain(`for="${id}"`);
+    expect(find(tree, (node) => node.props.id === "budget").props.value).toBe("250.00");
+    expect(find(tree, (node) => node.props.id === "choice").type).toBe("select");
+    expect(find(tree, (node) => node.props.id === "choice").props.value).toBe("pop");
     expect(find(tree, (node) => node.props.id === "quantity").props.type).toBe("number");
   });
   it("disables confirmation until a budget is set", async () => { const tree = await loadContract({ ...draft, budgetCapCents: null }); expect(find(tree, (node) => node.props.type === "submit").props.disabled).toBe(true); });
@@ -87,14 +88,14 @@ describe("draft validation", () => {
   it.each(["0", "5000.01", "1.001", "-1", "Infinity", ""])("rejects invalid budget %s", (budget) => { expect(() => editedDraft(draft, { ...fieldsFromDraft(draft), budget }, "2026-10-17")).toThrow("budget"); });
   it("accepts the one-cent and maximum boundaries", () => { for (const budget of ["0.01", "5000.00"]) expect(editedDraft(draft, { ...fieldsFromDraft(draft), budget }, "2026-10-17").budgetCapCents).toBe(Math.round(Number(budget) * 100)); });
   it.each(["2026-10-16", "2026-02-30"])("rejects past or invalid deadline %s", (deadline) => { expect(() => editedDraft(draft, { ...fieldsFromDraft(draft), deadline }, "2026-10-17")).toThrow(deadline === "2026-10-16" ? "The date cannot be in the past." : "deadline"); });
-  it("accepts today and stores numeric size as a typed rule", () => { const result = editedDraft(draft, { ...fieldsFromDraft(draft), deadline: "2026-10-17", size: "11.5" }, "2026-10-17"); expect(result.deadline).toBe("2026-10-17"); expect(result.mustHave).toContainEqual({ key: "sizes_available", op: "includes", value: "11.5" }); });
+  it("accepts today and stores the chosen genre as a typed rule, replacing the old one", () => { const result = editedDraft(draft, { ...fieldsFromDraft(draft), deadline: "2026-10-17", choice: "rock" }, "2026-10-17"); expect(result.deadline).toBe("2026-10-17"); expect(result.mustHave).toContainEqual({ key: "genre", op: "includes", value: "rock" }); expect(result.mustHave).not.toContainEqual({ key: "genre", op: "includes", value: "pop" }); });
   it("preserves extra typed constraints and unsupported operators", () => {
-    const extra = [{ key: "width", op: "eq" as const, value: "narrow" }, { key: "size", op: "gte" as const, value: 10 }];
+    const extra = [{ key: "genre", op: "includes" as const, value: "rock" }, { key: "genre", op: "eq" as const, value: "latin" }];
     const loaded = ContractDraft.parse({ ...draft, mustHave: [...draft.mustHave, ...extra] });
     const result = editedDraft(loaded, fieldsFromDraft(loaded), "2026-10-17");
     for (const rule of extra) expect(result.mustHave).toContainEqual(rule);
   });
-  it.each([{ quantity: "0" }, { quantity: "1.5" }, { minReturnDays: "-1" }, { minReturnDays: "366" }, { size: "ten" }])("rejects invalid numeric fields", (fields) => {
+  it.each([{ quantity: "0" }, { quantity: "1.5" }, { minReturnDays: "-1" }, { minReturnDays: "366" }, { choice: "polka" }])("rejects invalid numeric fields", (fields) => {
     expect(() => editedDraft(draft, { ...fieldsFromDraft(draft), ...fields }, "2026-10-17")).toThrow();
   });
   it("rejects malformed successful API data", async () => { mockFetch({ draft: { nope: true } }); await expect(api("/api/drafts/example", DraftResult)).rejects.toThrow("read the response"); });
@@ -164,7 +165,7 @@ describe("M3 polish regressions", () => {
     expect(find(tree, (node) => node.props.id === field).props["aria-invalid"]).toBe(true);
     expect(namedItem).toHaveBeenCalledWith(field);
     expect(focus).toHaveBeenCalledOnce(); expect(fetch).not.toHaveBeenCalled();
-    expect(renderToStaticMarkup(tree as never)).toContain("$5,000.00");
+    expect(renderToStaticMarkup(tree as never)).toContain("5,000.00 VU");
   });
   it.each([
     ["/api/intake", 429, "You've reached the hourly goal limit. Please try again later."],
@@ -176,7 +177,7 @@ describe("M3 polish regressions", () => {
     await expect(api(url, DraftResult, {})).rejects.toThrow(message);
   });
   it("uses plain intake network error copy and clears Thinking", async () => {
-    let tree = render(Home); event(find(tree, (node) => node.props.id === "goal"), "onChange", "Wide shoes");
+    let tree = render(Home); event(find(tree, (node) => node.props.id === "goal"), "onChange", "A pop musician");
     vi.stubGlobal("fetch", vi.fn(async (url: string) => { if (url === "/api/csrf") return response({ token: "test-token" }); throw new Error("network stack trace"); }));
     tree = render(Home); await event(find(tree, (node) => node.type === "form"), "onSubmit");
     const markup = renderToStaticMarkup(render(Home) as never);
@@ -187,7 +188,7 @@ describe("M3 polish regressions", () => {
     const confirmed = { contract: { ...(({ question: _, ...rest }) => rest)(draft), budgetCapCents: 10025, id: harness.params.id, confirmedAt: "2026-10-17T00:00:00.000Z" }, contractHash: "b".repeat(64) };
     const fetch = vi.fn(async (url: string) => response(url === "/api/csrf" ? { token: "test-token" } : url === "/api/intake" ? { draftId: harness.params.id, draft } : url.startsWith("/api/drafts/") ? { draft } : confirmed));
     vi.stubGlobal("fetch", fetch);
-    let tree = render(Home); event(find(tree, (node) => node.props.id === "goal"), "onChange", "Wide shoes");
+    let tree = render(Home); event(find(tree, (node) => node.props.id === "goal"), "onChange", "A pop musician");
     tree = render(Home); await event(find(tree, (node) => node.type === "form"), "onSubmit");
     expect(harness.push).toHaveBeenLastCalledWith(`/contract/${harness.params.id}`);
     harness.slots = []; harness.effects = []; render(ContractPage); harness.effects[0]!();
@@ -203,14 +204,14 @@ it("uses generic error copy for a non-JSON session server failure", async () => 
   await expect(api("/api/intake", DraftResult, {})).rejects.toThrow("Something went wrong. Please try again.");
 });
 
-it.each(["groceries", "household"] as const)("preserves removable %s package size without a numeric size editor", async (category) => {
-  const rule = { key: "size", op: "eq" as const, value: "1 kg" };
-  const packageDraft = ContractDraft.parse({ ...draft, category, mustHave: [rule] });
-  const tree = await loadContract(packageDraft);
-  expect(elements(tree).some((node) => node.props.id === "size")).toBe(false);
-  expect(elements(tree).some((node) => node.props["aria-label"] === "Remove size requirement")).toBe(true);
-  expect(fieldsFromDraft(packageDraft).size).toBe("");
-  expect(editedDraft(packageDraft, fieldsFromDraft(packageDraft), "2026-10-17").mustHave).toEqual([rule]);
+it.each([["actors", "oscar", "yes"], ["athletes", "sport", "tennis"]] as const)("gives %s their own choice control, preselected from the draft", async (category, key, value) => {
+  const rule = { key, op: "eq" as const, value };
+  const loaded = ContractDraft.parse({ ...draft, category, mustHave: [rule] });
+  const tree = await loadContract(loaded);
+  expect(find(tree, (node) => node.props.id === "choice").props.value).toBe(value);
+  expect(elements(tree).some((node) => node.props["aria-label"] === `Remove ${key} requirement`)).toBe(false);
+  expect(fieldsFromDraft(loaded).choice).toBe(value);
+  expect(editedDraft(loaded, fieldsFromDraft(loaded), "2026-10-17").mustHave).toEqual([rule]);
 });
 
 describe("M3 review fixes", () => {
@@ -221,30 +222,31 @@ describe("M3 review fixes", () => {
   };
 
   it("edits other requirements in place and keeps numeric values numeric", async () => {
-    const household = ContractDraft.parse({ ...draft, category: "household", mustHave: [{ key: "watts", op: "lte", value: 9 }, { key: "scent", op: "eq", value: "lemon" }] });
-    let tree = await loadContract(household);
-    expect(find(tree, (node) => node.props.htmlFor === "rule-0").props.children).toBe("watts at most");
+    const athletes = ContractDraft.parse({ ...draft, category: "athletes", mustHave: [{ key: "titles", op: "lte", value: 9 }, { key: "team", op: "eq", value: "lakers" }] });
+    let tree = await loadContract(athletes);
+    expect(find(tree, (node) => node.props.htmlFor === "rule-0").props.children).toBe("titles at most");
     event(find(tree, (node) => node.props.id === "rule-0"), "onChange", "12"); tree = render(ContractPage);
-    event(find(tree, (node) => node.props.id === "rule-1"), "onChange", " lavender "); tree = render(ContractPage);
-    const fetch = mockFetch(confirmedBody(household));
+    event(find(tree, (node) => node.props.id === "rule-1"), "onChange", " celtics "); tree = render(ContractPage);
+    const fetch = mockFetch(confirmedBody(athletes));
     await event(find(tree, (node) => node.type === "form"), "onSubmit");
-    expect(postedDraft(fetch).draft.mustHave).toEqual([{ key: "watts", op: "lte", value: 12 }, { key: "scent", op: "eq", value: "lavender" }]);
+    expect(postedDraft(fetch).draft.mustHave).toEqual([{ key: "titles", op: "lte", value: 12 }, { key: "team", op: "eq", value: "celtics" }]);
   });
 
   it("rejects an empty or non-numeric requirement value with a field error", () => {
-    const watts = { key: "watts", op: "lte" as const, value: 9 }, scent = { key: "scent", op: "eq" as const, value: "lemon" };
-    const household = ContractDraft.parse({ ...draft, category: "household", mustHave: [watts, scent] });
-    const fields = fieldsFromDraft(household);
-    expect(() => editedDraft(household, fields, "2026-10-17", [{ rule: watts, value: "nine" }, { rule: scent, value: "lemon" }])).toThrow("Enter a number");
-    expect(() => editedDraft(household, fields, "2026-10-17", [{ rule: watts, value: "9" }, { rule: scent, value: "  " }])).toThrow("or remove it");
+    const titles = { key: "titles", op: "lte" as const, value: 9 }, team = { key: "team", op: "eq" as const, value: "lakers" };
+    const athletes = ContractDraft.parse({ ...draft, category: "athletes", mustHave: [titles, team] });
+    const fields = fieldsFromDraft(athletes);
+    expect(() => editedDraft(athletes, fields, "2026-10-17", [{ rule: titles, value: "nine" }, { rule: team, value: "lakers" }])).toThrow("Enter a number");
+    expect(() => editedDraft(athletes, fields, "2026-10-17", [{ rule: titles, value: "9" }, { rule: team, value: "  " }])).toThrow("or remove it");
   });
 
-  it("offers width and size controls only for running shoes", async () => {
-    const groceries = ContractDraft.parse({ ...draft, category: "groceries", mustHave: [{ key: "type", op: "eq", value: "oats" }] });
-    const tree = await loadContract(groceries);
-    expect(elements(tree).some((node) => node.props.id === "width")).toBe(false);
-    expect(elements(tree).some((node) => node.props.id === "size")).toBe(false);
-    expect(editedDraft(groceries, { ...fieldsFromDraft(groceries), width: "wide", size: "10" }, "2026-10-17").mustHave).toEqual([{ key: "type", op: "eq", value: "oats" }]);
+  it("offers only the category's own choices", async () => {
+    const athletes = ContractDraft.parse({ ...draft, category: "athletes", mustHave: [] });
+    const tree = await loadContract(athletes);
+    const options = elements(find(tree, (node) => node.props.id === "choice")).filter((node) => node.type === "option").map((node) => node.props.value);
+    expect(options).toEqual(["", "tennis", "soccer", "basketball", "track and field", "gymnastics", "swimming", "american football", "motor racing"]);
+    expect(editedDraft(athletes, { ...fieldsFromDraft(athletes), choice: "tennis" }, "2026-10-17").mustHave).toEqual([{ key: "sport", op: "eq", value: "tennis" }]);
+    expect(() => editedDraft(athletes, { ...fieldsFromDraft(athletes), choice: "pop" }, "2026-10-17")).toThrow("Choose a sport from the list.");
   });
 
   it("shows requirements the store can't check and blocks confirming until each is removed", async () => {

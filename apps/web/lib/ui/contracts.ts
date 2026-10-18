@@ -48,20 +48,28 @@ export async function api<S extends z.ZodType>(url: string, schema: S, body?: un
   return parsed.data;
 }
 
-export type Fields = { budget: string; quantity: string; minReturnDays: string; deadline: string; width: string; size: string };
+export type Fields = { budget: string; quantity: string; minReturnDays: string; deadline: string; choice: string };
 // A requirement without its own control, edited as text; numeric values stay numeric.
 export type Extra = { rule: Rule; value: string };
-const SHOES = "running-shoes";
-export const isTypedRule = (rule: Rule) =>
-  (rule.key === "width" && rule.op === "eq" && ["wide", "standard", "narrow"].includes(String(rule.value))) ||
-  (rule.key === "sizes_available" && rule.op === "includes") || (rule.key === "size" && rule.op === "eq");
-// Width and size have their own controls only for shoes, the one category whose products have them.
+// Each category's one store attribute with its own control (the values the demo store uses).
+export const CHOICES = {
+  actors: { key: "oscar", op: "eq", label: "Academy Award winner", none: "No requirement", options: [["yes", "Has won an Oscar"], ["no", "Hasn't won an Oscar"]] },
+  musicians: { key: "genre", op: "includes", label: "Genre", none: "Any genre",
+    options: [["pop", "Pop"], ["rock", "Rock"], ["r&b", "R&B"], ["soul", "Soul"], ["hip-hop", "Hip-hop"], ["country", "Country"], ["latin", "Latin"], ["electronic", "Electronic"]] },
+  athletes: { key: "sport", op: "eq", label: "Sport", none: "Any sport",
+    options: [["tennis", "Tennis"], ["soccer", "Soccer"], ["basketball", "Basketball"], ["track and field", "Track and field"], ["gymnastics", "Gymnastics"],
+      ["swimming", "Swimming"], ["american football", "American football"], ["motor racing", "Motor racing"]] },
+} as const satisfies Record<ContractDraft["category"], { key: string; op: Rule["op"]; label: string; none: string; options: readonly (readonly [string, string])[] }>;
+export const isTypedRule = (category: ContractDraft["category"], rule: Rule) => {
+  const choice = CHOICES[category];
+  return rule.key === choice.key && rule.op === choice.op && choice.options.some(([value]) => value === String(rule.value).toLowerCase());
+};
+// The first rule matching the category's choice gets the control; any others stay editable as text.
 export function editableRules(draft: ContractDraft) {
-  const seen = new Set<string>();
+  let taken = false;
   return draft.mustHave.map((rule) => {
-    const key = rule.key === "width" ? "width" : "size";
-    if (draft.category !== SHOES || !isTypedRule(rule) || seen.has(key)) return false;
-    seen.add(key); return true;
+    if (taken || !isTypedRule(draft.category, rule)) return false;
+    taken = true; return true;
   });
 }
 export function extrasFromDraft(draft: ContractDraft): Extra[] {
@@ -71,7 +79,7 @@ export function extrasFromDraft(draft: ContractDraft): Extra[] {
 export function fieldsFromDraft(draft: ContractDraft): Fields {
   const typed = (keys: string[]) => draft.mustHave.find((rule, index) => editableRules(draft)[index] && keys.includes(rule.key));
   return { budget: draft.budgetCapCents === null ? "" : (draft.budgetCapCents / 100).toFixed(2), quantity: String(draft.quantity), minReturnDays: String(draft.minReturnDays), deadline: draft.deadline ?? "",
-    width: String(typed(["width"])?.value ?? ""), size: String(typed(["size", "sizes_available"])?.value ?? "") };
+    choice: String(typed([CHOICES[draft.category].key])?.value ?? "").toLowerCase() };
 }
 export const ruleLabel = (rule: Rule) =>
   `${rule.key.replaceAll("_", " ")} ${({ eq: "is", gte: "at least", lte: "at most", includes: "includes" } as const)[rule.op]}`;
@@ -82,14 +90,13 @@ export class FieldError extends Error {
 export function editedDraft(draft: ContractDraft, fields: Fields, today: string, extras: Extra[] = extrasFromDraft(draft)): ContractDraft {
   const budget = z.string().regex(/^\d+(?:\.\d{1,2})?$/).safeParse(fields.budget);
   const cents = budget.success ? Math.round(Number(fields.budget) * 100) : NaN;
-  if (!Contract.shape.budgetCapCents.safeParse(cents).success) throw new FieldError("budget", "Enter a budget from $0.01 to $5,000.00, with up to two decimal places.");
+  if (!Contract.shape.budgetCapCents.safeParse(cents).success) throw new FieldError("budget", "Enter a budget from 0.01 to 5,000.00 VU, with up to two decimal places.");
   if (!/^\d+$/.test(fields.quantity) || !Contract.shape.quantity.safeParse(Number(fields.quantity)).success) throw new FieldError("quantity", "Enter a quantity from 1 to 10, using a whole number.");
-  if (!/^\d+$/.test(fields.minReturnDays) || !Contract.shape.minReturnDays.safeParse(Number(fields.minReturnDays)).success) throw new FieldError("returns", "Enter return days from 0 to 365, using a whole number.");
+  if (!/^\d+$/.test(fields.minReturnDays) || !Contract.shape.minReturnDays.safeParse(Number(fields.minReturnDays)).success) throw new FieldError("returns", "Enter refund days from 0 to 365, using a whole number.");
   if (fields.deadline && !z.iso.date().safeParse(fields.deadline).success) throw new FieldError("deadline", "Enter a valid deadline in YYYY-MM-DD format.");
   if (fields.deadline && fields.deadline < today) throw new FieldError("deadline", "The date cannot be in the past.");
-  const shoes = draft.category === SHOES;
-  if (shoes && fields.width && !z.enum(["wide", "standard", "narrow"]).safeParse(fields.width).success) throw new FieldError("width", "Choose wide, standard, or narrow width.");
-  if (shoes && fields.size && !z.string().max(40).regex(/^\d+(?:\.\d+)?$/).safeParse(fields.size).success) throw new FieldError("size", "Enter a numeric size, such as 10.5.");
+  const choice = CHOICES[draft.category];
+  if (fields.choice && !choice.options.some(([value]) => value === fields.choice)) throw new FieldError("choice", `Choose a ${choice.label.toLowerCase()} from the list.`);
   const mustHave: Rule[] = extras.map(({ rule, value }, index) => {
     const field = `rule-${index}`, label = ruleLabel(rule);
     const text = value.trim();
@@ -100,8 +107,7 @@ export function editedDraft(draft: ContractDraft, fields: Fields, today: string,
     if (!text || text.length > 40) throw new FieldError(field, `Enter a value of up to 40 characters for "${label}", or remove it.`);
     return { ...rule, value: text };
   });
-  if (shoes && fields.width) mustHave.push({ key: "width", op: "eq", value: fields.width });
-  if (shoes && fields.size) mustHave.push({ key: "sizes_available", op: "includes", value: fields.size });
+  if (fields.choice) mustHave.push({ key: choice.key, op: choice.op, value: fields.choice });
   const { deadline: _deadline, ...rest } = draft;
   const result = ContractDraft.safeParse({ ...rest, budgetCapCents: cents, quantity: Number(fields.quantity), minReturnDays: Number(fields.minReturnDays), ...(fields.deadline ? { deadline: fields.deadline } : {}), mustHave, question: null });
   if (!result.success) throw new Error("Keep at most eight rules before confirming.");

@@ -38,6 +38,8 @@ p { margin: 12px 0; }
 .header-inner [aria-current="page"] { background: var(--text); color: white; }
 .skip-link { position: absolute; left: 16px; top: -100px; padding: 12px; background: white; z-index: 5; }
 .skip-link:focus { top: 12px; }
+/* Text for screen readers only (e.g. the home page heading, which has no visible title). */
+.visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 .screen, .screen.wide { width: min(1120px, calc(100% - 48px)); margin: 56px auto 80px; overflow-wrap: anywhere; min-height: 50vh; }
 .screen:not(.wide):not(.home-screen) { max-width: 880px; }
 .screen > section, .screen > form { margin-top: 32px; }
@@ -71,6 +73,7 @@ legend { font-size: 12px; font-weight: 400; padding: 0 10px; }
 .field-grid label { font-size: 11px; letter-spacing: 0; line-height: 1.6; }
 .field-grid input, .field-grid select { font-size: 13px; }
 .money-input { display: flex; align-items: center; gap: 8px; }
+.money-input > span { white-space: nowrap; }
 .chip { background: white; border: 1px solid var(--border); border-radius: 3px; padding: 16px; display: flex; align-items: center; gap: 12px; }
 .chip span { flex: 1; min-width: 0; }
 .chip label { flex: 0 1 200px; margin: 0; }

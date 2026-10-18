@@ -1,4 +1,4 @@
-// pnpm e2e:hardcoded (M2): confirm a hard-coded contract for SHOE-WIDE-01, build a cart, verify
+// pnpm e2e:hardcoded (M2): confirm a hard-coded contract for Tom Hanks (CELEB-942), build a cart, verify
 // it and approve it, printing the Visa sandbox payment link. No model calls.
 // Needs both servers running: `pnpm dev` (web + mock store) and `pnpm --filter payments dev`.
 import { randomUUID } from "node:crypto";
@@ -10,7 +10,7 @@ import { databasePath } from "../lib/env";
 
 const WEB = process.env.WEB_URL || "http://127.0.0.1:3000";
 const STORE = process.env.STORE_BASE_URL || `${WEB}/api/store`;
-const dollars = (c: number) => `$${(c / 100).toFixed(2)}`;
+const dollars = (c: number) => `${(c / 100).toFixed(2)} VU`;
 
 const cookies = new Map<string, string>();
 let csrf = "";
@@ -39,18 +39,14 @@ async function main(): Promise<void> {
   console.log(`web: ${WEB}`);
   csrf = (await call("GET", "/api/csrf")).token;
 
-  // 1. Store the hard-coded draft (intake would write it, M3) and confirm it (SPEC §17.2: wide road
-  // shoe, size 10.5, $140.00, 14-day returns).
+  // 1. Store the hard-coded draft (intake would write it, M3) and confirm it: an Oscar-winning actor,
+  // 300.00 VU including tax, 14-day refund window.
   const draft = ContractDraft.parse({
-    category: "running-shoes",
-    goal: "wide running shoes for a half marathon, size 10.5, under $140, must be returnable",
+    category: "actors",
+    goal: "an Oscar-winning actor, under 300 VU, must be refundable",
     quantity: 1,
-    budgetCapCents: 14000,
-    mustHave: [
-      { key: "width", op: "eq", value: "wide" },
-      { key: "sizes_available", op: "includes", value: "10.5" },
-      { key: "use", op: "eq", value: "road" },
-    ],
+    budgetCapCents: 30000,
+    mustHave: [{ key: "oscar", op: "eq", value: "yes" }],
     allowedMerchants: ["demo-store"],
     minReturnDays: 14,
     question: null,
@@ -64,18 +60,18 @@ async function main(): Promise<void> {
 
   // 2. Seed the one hard-coded option (in M4 the shopping run writes this).
   const qres = await fetch(`${STORE}/quote`, { method: "POST", headers: { "content-type": "application/json" },
-    body: JSON.stringify({ lines: [{ sku: "SHOE-WIDE-01", qty: 1 }] }) });
+    body: JSON.stringify({ lines: [{ sku: "CELEB-942", qty: 1 }] }) });
   const q = Quote.parse(await qres.json());
   const option = Option.parse({
     rank: 1,
-    lines: [{ sku: "SHOE-WIDE-01", qty: 1 }],
-    reason: "Hard-coded M2 test option: wide road shoe in size 10.5.",
+    lines: [{ sku: "CELEB-942", qty: 1 }],
+    reason: "Hard-coded test option: Tom Hanks, an Oscar winner.",
     estimate: { totalCents: q.totalCents, deliveryDays: q.lines[0]!.deliveryDays, returnDays: q.lines[0]!.returnDays },
   });
   const db = openDb(databasePath());
   saveOptions(db, contract.id, [option], [], new Date().toISOString());
   db.close();
-  console.log(`2. option seeded       SHOE-WIDE-01  estimate ${dollars(option.estimate.totalCents)}`);
+  console.log(`2. option seeded       CELEB-942  estimate ${dollars(option.estimate.totalCents)}`);
 
   // 3. Build the cart from rank 1.
   const { cart } = await call("POST", "/api/carts", { contractId: contract.id, rank: 1 });
@@ -93,7 +89,8 @@ async function main(): Promise<void> {
   const { purchaseNumber, paymentLinkUrl } = await call("POST", "/api/approve", { cartId: cart.id, approvalNonce: approval.approvalNonce });
   console.log(`5. approved            purchase ${purchaseNumber}`);
 
-  if (verdict.totalCents !== 13932) throw new Error(`Expected $139.32, got ${dollars(verdict.totalCents)}`);
+  // The verified total is the store's own quote (the market price plus 8% tax), never a model's number.
+  if (verdict.totalCents !== q.totalCents) throw new Error(`Expected the store's quote ${dollars(q.totalCents)}, got ${dollars(verdict.totalCents)}`);
   const audit = await call("GET", "/api/audit/verify");
   console.log(`\nAudit chain: ${audit.ok ? "ok" : `BROKEN at seq ${audit.brokenAt}`} (${audit.length} entries)`);
   console.log(`\nSandbox payment link for ${dollars(verdict.totalCents)}:\n${paymentLinkUrl}`);

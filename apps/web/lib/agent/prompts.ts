@@ -4,8 +4,9 @@ Never invent a budget. If the goal has no budget, set budgetCapCents to null and
 If any other required value is missing and the profile does not supply it, choose the
 safest default (quantity 1, minReturnDays 14) and mention it in the question field.
 Ask at most one short question in the question field, or set it to null.
-Use only these categories: running-shoes, groceries, household.
+Use only these categories: actors, musicians, athletes.
 Use only the merchants listed by the system for allowedMerchants.
+Prices are in VU and 1 VU equals 100 cents, so a budget of 250 VU is budgetCapCents 25000.
 Express every amount in integer cents.`;
 
 // SPEC §7.2, word for word (a test compares it with the SPEC).

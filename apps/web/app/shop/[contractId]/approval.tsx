@@ -1,7 +1,7 @@
 import { FAILURE_TEXT } from "../../../lib/failure-text.ts";
 import { ruleLabel, type Rule } from "../../../lib/ui/contracts.ts";
 import type { FailureCode } from "../../../lib/ui/purchase-api.ts";
-import { money } from "./results.tsx";
+import { dollars, money } from "./results.tsx";
 
 // Screens 5 and 6 (SPEC §16). No hooks: the page owns the state. Approve and Not now share one
 // style so neither is pushed; no timers or urgency copy.
@@ -15,7 +15,7 @@ export function ApprovalPanel({ title, totalCents, budgetCapCents, checks, busy,
     <h2 id="approval-heading">Approve this order?</h2>
     <div className="approval-layout"><div>
     <p><strong>{title}</strong></p>
-    <p>Total {money(totalCents)}, including tax and shipping. {money(budgetCapCents - totalCents)} of your {money(budgetCapCents)} budget left.</p>
+    <p>Total {money(totalCents)}, including tax (= {dollars(totalCents)} at the demo rate of 1 VU = $1.00). {money(budgetCapCents - totalCents)} of your {money(budgetCapCents)} budget left.</p>
     <div className="budget-meter"><label htmlFor="order-budget">Budget allocation <span>{money(budgetCapCents)} cap</span></label><progress id="order-budget" value={totalCents} max={budgetCapCents} /><p className="hint">{money(totalCents)} order total · {money(budgetCapCents - totalCents)} remaining</p></div>
     <h3>Checked by Amasa&apos;s verifier against the store&apos;s own data</h3>
     <ul className="checks">{checks.map((check) => <li key={check}>{check}</li>)}</ul>
@@ -69,9 +69,9 @@ export function approvalChecks(contract: { mustHave: Rule[]; minReturnDays: numb
   return [
     "✓ Total is within your budget, using the store's own quote",
     ...contract.mustHave.map((rule) => `✓ ${ruleLabel(rule)} ${String(rule.value)}`),
-    `✓ Returns: at least ${contract.minReturnDays} days`,
+    `✓ Refund window: at least ${contract.minReturnDays} days`,
     `✓ Quantity: ${contract.quantity}`,
-    ...(contract.deadline ? [`✓ Arrives by ${contract.deadline}`] : []),
+    ...(contract.deadline ? [`✓ Delivered by ${contract.deadline}`] : []),
     "✓ Sold by a store in your contract, and not flagged",
   ];
 }

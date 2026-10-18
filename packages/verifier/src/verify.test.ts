@@ -8,7 +8,7 @@ const PRICING = { taxRateBps: 800, freeShippingOverCents: 10000, flatShippingCen
 
 const baseContract: Contract = {
   id: "11111111-1111-4111-8111-111111111111",
-  category: "running-shoes",
+  category: "actors",
   goal: "wide running shoes for a half marathon, size 10.5, under $140",
   quantity: 1,
   budgetCapCents: 14000,
@@ -26,7 +26,7 @@ const listing = (over: Partial<StoreListing> = {}): StoreListing => ({
   sku: "SHOE-WIDE-01",
   title: "Wide Road Runner",
   brand: "Stride",
-  category: "running-shoes",
+  category: "actors",
   unitCents: 12900,
   returnDays: 30,
   deliveryDays: 3,

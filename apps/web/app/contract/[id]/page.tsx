@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { KNOWN_MERCHANTS } from "../../../lib/merchants.ts";
-import { api, FieldError, ConfirmInput, ContractDraft, ContractResult, DraftResult, editedDraft, extrasFromDraft, fieldsFromDraft, Id, ruleLabel, type Extra, type Fields, type Rule } from "../../../lib/ui/contracts.ts";
+import { api, CHOICES, FieldError, ConfirmInput, ContractDraft, ContractResult, DraftResult, editedDraft, extrasFromDraft, fieldsFromDraft, Id, ruleLabel, type Extra, type Fields, type Rule } from "../../../lib/ui/contracts.ts";
 
 const ruleName = (rule: Rule) => rule.key.replaceAll("_", " ");
 
@@ -63,7 +63,7 @@ export default function ContractPage() {
       setError(cause instanceof Error ? cause.message : "We couldn't confirm this contract. Please try again."); }
     finally { pending.current = false; setBusy(false); }
   }
-  const shoes = draft?.category === "running-shoes";
+  const choice = draft ? CHOICES[draft.category] : null;
   return <main className="screen"><p className="eyebrow">01 / Set the boundaries</p><h1 ref={heading} tabIndex={-1}>Review your contract</h1>
     <p className="subtitle">Your goal, translated into clear shopping rules. Edit any detail before Amasa starts looking.</p>
     {loading && <p role="status">Loading your draft...</p>}
@@ -76,12 +76,11 @@ export default function ContractPage() {
           <ul className="rules">{unsupported.map((rule, index) => <li className="chip" key={`${index}-${rule.key}-${rule.op}`}><span>{ruleLabel(rule)} {String(rule.value)}</span><button id={`unsupported-${index}`} className="secondary" type="button" disabled={busy} aria-invalid={invalidField === `unsupported-${index}`} aria-describedby="unsupported-help contract-status" aria-label={`Remove ${ruleName(rule)} requirement that Amasa can't check`} onClick={() => { setUnsupported(unsupported.filter((_, position) => position !== index)); clearError(); }}>Remove</button></li>)}</ul>
         </section>}
         <fieldset disabled={busy}><legend>Shopping requirements</legend><div className="field-grid">
-          <div><label htmlFor="budget">Budget in dollars</label><div className="money-input"><span aria-hidden="true">$</span><input id="budget" aria-invalid={invalidField === "budget"} inputMode="decimal" value={fields.budget} onBlur={() => { if (/^\d+(?:\.\d{1,2})?$/.test(fields.budget) && Number(fields.budget) <= 5000 && Number(fields.budget) > 0) setFields({ ...fields, budget: Number(fields.budget).toFixed(2) }); }} onChange={(event) => change("budget", event.target.value)} required aria-describedby="budget-help contract-status" /></div><p className="hint" id="budget-help">Total including tax and shipping. Maximum $5,000.00.</p></div>
+          <div><label htmlFor="budget">Budget in VU</label><div className="money-input"><span aria-hidden="true">VU</span><input id="budget" aria-invalid={invalidField === "budget"} inputMode="decimal" value={fields.budget} onBlur={() => { if (/^\d+(?:\.\d{1,2})?$/.test(fields.budget) && Number(fields.budget) <= 5000 && Number(fields.budget) > 0) setFields({ ...fields, budget: Number(fields.budget).toFixed(2) }); }} onChange={(event) => change("budget", event.target.value)} required aria-describedby="budget-help contract-status" /></div><p className="hint" id="budget-help">Total including tax. Maximum 5,000.00 VU (1 VU = $1.00 in this demo).</p></div>
           <div><label htmlFor="quantity">Quantity</label><input id="quantity" aria-invalid={invalidField === "quantity"} aria-describedby="contract-status" type="number" min="1" max="10" step="1" value={fields.quantity} onChange={(event) => change("quantity", event.target.value)} required /></div>
-          <div><label htmlFor="returns">Minimum return days</label><input id="returns" aria-invalid={invalidField === "returns"} aria-describedby="contract-status" type="number" min="0" max="365" step="1" value={fields.minReturnDays} onChange={(event) => change("minReturnDays", event.target.value)} required /></div>
+          <div><label htmlFor="returns">Minimum refund days</label><input id="returns" aria-invalid={invalidField === "returns"} aria-describedby="contract-status" type="number" min="0" max="365" step="1" value={fields.minReturnDays} onChange={(event) => change("minReturnDays", event.target.value)} required /></div>
           <div><label htmlFor="deadline">Deadline (optional)</label><input id="deadline" aria-invalid={invalidField === "deadline"} aria-describedby="contract-status" type="date" min={today} value={fields.deadline} onChange={(event) => change("deadline", event.target.value)} /></div>
-          {shoes && <div><label htmlFor="width">Width (optional)</label><select id="width" aria-invalid={invalidField === "width"} aria-describedby="contract-status" value={fields.width} onChange={(event) => change("width", event.target.value)}><option value="">No width requirement</option><option value="wide">Wide</option><option value="standard">Standard</option><option value="narrow">Narrow</option></select></div>}
-          {shoes && <div><label htmlFor="size">Size (optional)</label><input id="size" aria-invalid={invalidField === "size"} aria-describedby="contract-status" inputMode="decimal" maxLength={40} value={fields.size} onChange={(event) => change("size", event.target.value)} /></div>}
+          {choice && <div><label htmlFor="choice">{choice.label} (optional)</label><select id="choice" aria-invalid={invalidField === "choice"} aria-describedby="contract-status" value={fields.choice} onChange={(event) => change("choice", event.target.value)}><option value="">{choice.none}</option>{choice.options.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></div>}
         </div>
         {extras.length > 0 && <section aria-labelledby="other-rules"><h2 id="other-rules">Other requirements</h2><ul className="rules">{extras.map((extra, index) => <li className="chip" key={`${index}-${extra.rule.key}-${extra.rule.op}`}>
           <label htmlFor={`rule-${index}`}>{ruleLabel(extra.rule)}</label>

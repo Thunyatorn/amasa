@@ -1,4 +1,4 @@
-// pnpm e2e:shop (M4 gate): the personalized happy path over HTTP, ending in a sandbox payment link.
+// pnpm e2e:shop (M4 gate, celebrity store): the happy path over HTTP, ending in a sandbox payment link.
 // seed profile → intake → confirm → shopping run (streamed) → cart for the top option → verify →
 // approve. Needs `pnpm dev` (with the model variables) and `pnpm --filter payments dev` running.
 import { ProgressEvent } from "@amasa/schemas";
@@ -7,8 +7,8 @@ import { databasePath } from "../lib/env";
 import { seed } from "./seed";
 
 const WEB = process.env.WEB_URL || "http://127.0.0.1:3000";
-const GOAL = process.env.E2E_GOAL || "Road running shoes for a half marathon, under $140, must be returnable";
-const dollars = (c: number) => `$${(c / 100).toFixed(2)}`;
+const GOAL = process.env.E2E_GOAL || "An Oscar-winning actor, under 300 VU, must be refundable";
+const dollars = (c: number) => `${(c / 100).toFixed(2)} VU`;
 const started = Date.now();
 const at = () => `${((Date.now() - started) / 1000).toFixed(1)}s`.padStart(7);
 const cookies = new Map<string, string>();
@@ -80,17 +80,19 @@ async function main(): Promise<void> {
   const events = await shop(contract.id);
   const options = events.find((e): e is Extract<ProgressEvent, { type: "options" }> => e.type === "options");
   const skus = options?.options.flatMap((o) => o.lines.map((l) => l.sku)) ?? [];
-  console.log("\nM4 acceptance checks");
-  check("options include SHOE-WIDE-01 and SHOE-WIDE-02", skus.includes("SHOE-WIDE-01") && skus.includes("SHOE-WIDE-02"));
-  check('compare highlights "$12.96 cheaper but 14-day returns"', options?.compare.tradeoff === "$12.96 cheaper but 14-day returns"
-    && options.compare.rows.some((r) => r.highlight && r.label === "Returns"));
-  check("SHOE-LUX-01 is filtered out with a reason", events.some((e) => e.type === "flagged" && e.sku === "SHOE-LUX-01" && e.reason.length > 0));
+  console.log("\nAcceptance checks");
+  check("the contract asks for an Oscar winner", contract.category === "actors" && contract.mustHave.some((r: { key: string; value: unknown }) => r.key === "oscar" && r.value === "yes"));
+  check(`there are options (${skus.join(", ") || "none"})`, skus.length > 0);
+  const listings = await Promise.all(skus.map(async (sku) => (await request("GET", `/api/store/products/${sku}`)).json() as Promise<{ title: string; attributes: Record<string, unknown> }>));
+  check(`every option is an Oscar winner (${listings.map((l) => l.title).join(", ")})`, listings.length > 0 && listings.every((l) => l.attributes.oscar === "yes"));
+  check("every option is within the budget, including tax", !!options && options.options.every((o) => o.estimate.totalCents <= contract.budgetCapCents));
+  check(`the compare table states a trade-off ("${options?.compare.tradeoff ?? ""}")`, !!options && (options.options.length < 2 || options.compare.tradeoff.length > 0));
   check("every option has a reason and Why? details", !!options && options.options.every((o) => o.reason.length > 0
     && options.details.some((d) => d.rank === o.rank && d.checks.length > 0 && d.dataUsed.length > 0)));
   check("the run ended with done", events.at(-1)?.type === "done");
   if (!options || failures.length) throw new Error(`${failures.length} check(s) failed`);
 
-  const rank = options.options.find((o) => o.lines.some((l) => l.sku === "SHOE-WIDE-01"))!.rank;
+  const rank = options.options[0]!.rank;
   const { cart } = await call("POST", "/api/carts", { contractId: contract.id, rank });
   const { verdict, approval } = await call("POST", "/api/verify", { cartId: cart.id });
   console.log(`\n${at()}  verdict ${verdict.pass ? "PASS" : "BLOCKED"} total ${dollars(verdict.totalCents)}`);

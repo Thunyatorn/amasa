@@ -11,7 +11,7 @@ export const OptionProduct = z.strictObject({
   sku: Sku, title: z.string().max(80), brand: z.string().max(40), sponsored: z.boolean(),
   stock: z.number().int().min(0), rating: z.number().min(0).max(5), reviewCount: z.number().int().min(0),
   returnDays: z.number().int().min(0), deliveryDays: z.number().int().min(0),
-  facts: ReaderFacts.pick({ fitNotes: true, praise: true, complaints: true }),
+  facts: ReaderFacts.pick({ praise: true, complaints: true }),
   reviewQuotes: z.array(z.string().max(200)).max(2),
 });
 export type OptionProduct = z.infer<typeof OptionProduct>;

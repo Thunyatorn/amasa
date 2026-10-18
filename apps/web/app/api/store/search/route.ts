@@ -1,4 +1,4 @@
-import { catalog } from "../_lib/catalog";
+import { withCatalog } from "../_lib/catalog";
 import { search, SearchParams } from "../_lib/logic";
 
 // GET /api/store/search?q=&category=&limit= (SPEC §4.2)
@@ -11,5 +11,5 @@ export async function GET(request: Request): Promise<Response> {
   });
   if (!parsed.success) return Response.json({ code: "INVALID_REQUEST", message: "Invalid search parameters." }, { status: 400 });
   const { q, category, limit } = parsed.data;
-  return Response.json({ listings: search(catalog(), q, category, limit) });
+  return withCatalog((c) => Response.json({ listings: search(c, q, category, limit) }));
 }

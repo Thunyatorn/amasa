@@ -12,19 +12,9 @@
     "budgetCapCents": 40000,
     "mustHave": [
       {
-        "key": "width",
-        "op": "eq",
-        "value": "standard"
-      },
-      {
-        "key": "sizes_available",
+        "key": "genre",
         "op": "includes",
-        "value": "10.5"
-      },
-      {
-        "key": "use",
-        "op": "eq",
-        "value": "road"
+        "value": "hip-hop"
       }
     ]
   },

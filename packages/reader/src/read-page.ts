@@ -42,7 +42,7 @@ export async function readPage(page: ProductPage, deps: ReaderModel & { signal?:
     // A topic listed as both praise and complaint is unclear, so it is dropped from both.
     const mixed = new Set(out.praise.filter((topic) => out.complaints.includes(topic)));
     const facts = ReaderFacts.parse({
-      ...out, sku: input.sku, fitNotes: unique(out.fitNotes), praise: unique(out.praise.filter((t) => !mixed.has(t))),
+      ...out, sku: input.sku, praise: unique(out.praise.filter((t) => !mixed.has(t))),
       complaints: unique(out.complaints.filter((t) => !mixed.has(t))), suspiciousSpans: unique(out.suspiciousSpans),
     });
     return { ok: true, facts, tokens };

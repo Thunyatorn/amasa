@@ -45,12 +45,11 @@ export function normalizeDraft(draft: ContractDraft, goal: string): IntakeResult
   const kept = new Map<string, Rule>();
   const unsupported = new Map<string, Rule>();
   for (const original of parsed.mustHave) {
-    // The store lists shoe sizes in sizes_available. An exact size maps onto it; a size range
-    // ("10 or larger") cannot be checked there, so it is reported instead of narrowed.
-    const exactShoeSize = parsed.category === "running-shoes" && original.key === "size"
-      && (original.op === "eq" || original.op === "includes");
-    const rule: Rule = exactShoeSize
-      ? { key: "sizes_available", op: "includes", value: String(original.value) }
+    // A musician's genre attribute lists every genre on record ("pop,r&b"), so "genre = pop" is
+    // checked as "genre includes pop".
+    const genreEquals = parsed.category === "musicians" && original.key === "genre" && original.op === "eq";
+    const rule: Rule = genreEquals
+      ? { key: "genre", op: "includes", value: String(original.value).toLowerCase() }
       : original;
     if (isStoreRule(parsed.category, rule)) kept.set(identity(rule), rule);
     else unsupported.set(identity(original), original);

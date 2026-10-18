@@ -19,7 +19,7 @@ function request(over: { fields?: Partial<SignedFields>; key?: KeyObject } = {})
     contractHash: "c".repeat(64),
     cartHash: cartHash({ merchant: "demo-store", currency: "USD", lines, taxCents: 1032, shippingCents: 0 }),
     merchant: "demo-store",
-    category: "running-shoes",
+    category: "actors",
     currency: "USD",
     totalCents: 13932,
     budgetCapCents: 14000,

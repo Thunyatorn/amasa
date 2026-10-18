@@ -13,7 +13,7 @@ const AUDIT_WORDS: Record<string, string> = {
   payment_link_created: "Payment page created", payment_failed: "Payment page failed", outcome_recorded: "Kept or returned",
   autonomy_changed: "Autonomy changed", profile_changed: "Profile changed",
 };
-const CATEGORY_WORDS: Record<ProfileEntry["category"], string> = { "running-shoes": "Running shoes", groceries: "Groceries", household: "Household", all: "All categories" };
+const CATEGORY_WORDS: Record<ProfileEntry["category"], string> = { actors: "Actors", musicians: "Musicians", athletes: "Athletes", all: "All categories" };
 
 // Screen 8 (SPEC §16): autonomy per category with what each level does and what changes if raised,
 // the offer banner (never auto-promoted), one-tap lowering, the editable profile, the tamper-evident
@@ -79,7 +79,7 @@ export default function SettingsPage() {
         {state.offeredLevel !== null && <div className="panel">
           <p><strong>Offer:</strong> raise {CATEGORY_NAMES[state.category].toLowerCase()} to level {state.offeredLevel} ({LEVEL_NAMES[state.offeredLevel]}).</p>
           <p>What changes: {LEVEL_DESCRIPTIONS[state.offeredLevel]}</p>
-          {state.offeredLevel === 2 && <div><label htmlFor={`cap-${state.category}`}>Weekly limit in dollars</label>
+          {state.offeredLevel === 2 && <div><label htmlFor={`cap-${state.category}`}>Weekly limit in VU</label>
             <input id={`cap-${state.category}`} inputMode="decimal" value={caps[state.category] ?? (AUTONOMY.defaultWeeklyCapCents / 100).toFixed(2)}
               onChange={(event) => setCaps({ ...caps, [state.category]: event.target.value })} /></div>}
           <div className="choice-row">

@@ -20,16 +20,15 @@ async function run(goal: string) {
   return result;
 }
 
-const full = await run("wide running shoes for a half marathon, size 10.5, under $140, must be returnable");
+const full = await run("an Oscar-winning actor, under 300 VU, must be refundable");
 const has = (key: string, op: string, value: string) =>
   full.draft.mustHave.some((rule) => rule.key === key && rule.op === op && String(rule.value).toLowerCase() === value);
-check("category is running-shoes", full.draft.category === "running-shoes");
-check("budgetCapCents is 14000", full.draft.budgetCapCents === 14000);
-check("width eq wide", has("width", "eq", "wide"));
-check("sizes_available includes 10.5", has("sizes_available", "includes", "10.5"));
+check("category is actors", full.draft.category === "actors");
+check("budgetCapCents is 30000", full.draft.budgetCapCents === 30000);
+check("oscar eq yes", has("oscar", "eq", "yes"));
 check("minReturnDays is at least 14", full.draft.minReturnDays >= 14);
 
-const noBudget = await run("wide running shoes for a half marathon, size 10.5, must be returnable");
+const noBudget = await run("an Oscar-winning actor, must be refundable");
 check("budgetCapCents is null", noBudget.draft.budgetCapCents === null);
 check("a question is asked", typeof noBudget.draft.question === "string" && noBudget.draft.question.length > 0);
 

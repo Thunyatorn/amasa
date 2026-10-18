@@ -5,7 +5,7 @@ import { Category } from "./contract.ts";
 export const ProfileEntry = z.strictObject({
   id: z.string().uuid(),
   category: z.union([Category, z.literal("all")]),
-  key: z.string().regex(/^[a-z_]{1,32}$/),        // "size", "width", "brand_like", "brand_avoid"
+  key: z.string().regex(/^[a-z_]{1,32}$/),        // "genre", "sport", "oscar", "brand_like", "brand_avoid"
   value: z.union([z.string().max(40), z.number()]),
   source: z.enum(["user_edit", "kept", "returned"]), // never merchant content
   status: z.enum(["suggested", "confirmed"]),

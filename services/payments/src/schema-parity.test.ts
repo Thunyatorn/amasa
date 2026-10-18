@@ -6,7 +6,7 @@ import { PaymentRequest as Zod3PaymentRequest } from "./schema";
 const valid = {
   fields: {
     purchaseNumber: "ABCDEF0123456789", contractHash: "c".repeat(64), cartHash: "d".repeat(64),
-    merchant: "demo-store", category: "running-shoes", currency: "USD",
+    merchant: "demo-store", category: "actors", currency: "USD",
     totalCents: 13932, budgetCapCents: 14000, expiresAt: 1_800_000_000_000,
   },
   signature: "c2ln",

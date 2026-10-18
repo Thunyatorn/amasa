@@ -1,0 +1,1227 @@
+{
+  "description": "Amasa demo store: hand-picked celebrities from data/celebrities/metadata.csv. Facts come from Wikidata (see each entry's source). startVU = 2 VU per Wikipedia language edition (sitelinks), clamped to 40-400; refund window, stock, rating and reviews are the demo store's own data. Musician genres group Wikidata genre labels into pop, rock, r&b, soul, hip-hop, country, latin and electronic; labels that don't clearly belong to one group are left out.",
+  "celebrities": [
+    {
+      "labelId": 942,
+      "sku": "CELEB-942",
+      "name": "Tom Hanks",
+      "imagefile": "942_Tom_Hanks.jpg",
+      "category": "actors",
+      "attributes": {
+        "oscar": "yes"
+      },
+      "startVU": 272,
+      "refundDays": 14,
+      "deliveryDays": 0,
+      "stock": 25,
+      "rating": 4.8,
+      "reviewCount": 74,
+      "description": "Actor. Academy Award winner: Best Actor.",
+      "reviews": [
+        "Smooth checkout and instant delivery.",
+        "Fair price for the demo store."
+      ],
+      "source": {
+        "wikidata": "https://www.wikidata.org/wiki/Q2263",
+        "qid": "Q2263",
+        "sitelinks": 136,
+        "retrievedAt": "2026-10-18T14:48:16Z",
+        "academyAwards": [
+          "Academy Award for Best Actor"
+        ]
+      }
+    },
+    {
+      "labelId": 686,
+      "sku": "CELEB-686",
+      "name": "Meryl Streep",
+      "imagefile": "686_Meryl_Streep.jpg",
+      "category": "actors",
+      "attributes": {
+        "oscar": "yes"
+      },
+      "startVU": 268,
+      "refundDays": 30,
+      "deliveryDays": 0,
+      "stock": 25,
+      "rating": 4.8,
+      "reviewCount": 42,
+      "description": "Actor. Academy Award winner: Best Actress, Best Supporting Actress.",
+      "reviews": [
+        "Smooth checkout and instant delivery.",
+        "Fair price for the demo store."
+      ],
+      "source": {
+        "wikidata": "https://www.wikidata.org/wiki/Q873",
+        "qid": "Q873",
+        "sitelinks": 134,
+        "retrievedAt": "2026-10-18T14:48:16Z",
+        "academyAwards": [
+          "Academy Award for Best Actress",
+          "Academy Award for Best Supporting Actress"
+        ]
+      }
+    },
+    {
+      "labelId": 210,
+      "sku": "CELEB-210",
+      "name": "Denzel Washington",
+      "imagefile": "210_Denzel_Washington.jpg",
+      "category": "actors",
+      "attributes": {
+        "oscar": "yes"
+      },
+      "startVU": 222,
+      "refundDays": 14,
+      "deliveryDays": 0,
+      "stock": 25,
+      "rating": 4.4,
+      "reviewCount": 70,
+      "description": "Actor. Academy Award winner: Best Actor, Best Supporting Actor.",
+      "reviews": [
+        "Smooth checkout and instant delivery.",
+        "Fair price for the demo store."
+      ],
+      "source": {
+        "wikidata": "https://www.wikidata.org/wiki/Q42101",
+        "qid": "Q42101",
+        "sitelinks": 111,
+        "retrievedAt": "2026-10-18T14:48:16Z",
+        "academyAwards": [
+          "Academy Award for Best Actor",
+          "Academy Award for Best Supporting Actor"
+        ]
+      }
+    },
+    {
+      "labelId": 599,
+      "sku": "CELEB-599",
+      "name": "Leonardo DiCaprio",
+      "imagefile": "599_Leonardo_DiCaprio.jpg",
+      "category": "actors",
+      "attributes": {
+        "oscar": "yes"
+      },
+      "startVU": 298,
+      "refundDays": 14,
+      "deliveryDays": 0,
+      "stock": 25,
+      "rating": 4.9,
+      "reviewCount": 73,
+      "description": "Actor. Academy Award winner: Best Actor.",
+      "reviews": [
+        "Smooth checkout and instant delivery.",
+        "Fair price for the demo store."
+      ],
+      "source": {
+        "wikidata": "https://www.wikidata.org/wiki/Q38111",
+        "qid": "Q38111",
+        "sitelinks": 149,
+        "retrievedAt": "2026-10-18T14:48:16Z",
+        "academyAwards": [
+          "Academy Award for Best Actor"
+        ]
+      }
+    },
+    {
+      "labelId": 968,
+      "sku": "CELEB-968",
+      "name": "Viola Davis",
+      "imagefile": "968_Viola_Davis.jpg",
+      "category": "actors",
+      "attributes": {
+        "oscar": "yes"
+      },
+      "startVU": 160,
+      "refundDays": 14,
+      "deliveryDays": 0,
+      "stock": 25,
+      "rating": 4.2,
+      "reviewCount": 96,
+      "description": "Actor. Academy Award winner: Best Supporting Actress.",
+      "reviews": [
+        "Smooth checkout and instant delivery.",
+        "Fair price for the demo store."
+      ],
+      "source": {
+        "wikidata": "https://www.wikidata.org/wiki/Q229181",
+        "qid": "Q229181",
+        "sitelinks": 80,
+        "retrievedAt": "2026-10-18T14:48:16Z",
+        "academyAwards": [
+          "Academy Award for Best Supporting Actress"
+        ]
+      }
+    },
+    {
+      "labelId": 733,
+      "sku": "CELEB-733",
+      "name": "Natalie Portman",
+      "imagefile": "733_Natalie_Portman.jpg",
+      "category": "actors",
+      "attributes": {
+        "oscar": "yes"
+      },
+      "startVU": 274,
+      "refundDays": 14,
+      "deliveryDays": 0,
+      "stock": 25,
+      "rating": 4.7,
+      "reviewCount": 51,
+      "description": "Actor. Academy Award winner: Best Actress.",
+      "reviews": [
+        "Smooth checkout and instant delivery.",
+        "Fair price for the demo store."
+      ],
+      "source": {
+        "wikidata": "https://www.wikidata.org/wiki/Q37876",
+        "qid": "Q37876",
+        "sitelinks": 137,
+        "retrievedAt": "2026-10-18T14:48:16Z",
+        "academyAwards": [
+          "Academy Award for Best Actress"
+        ]
+      }
+    },
+    {
+      "labelId": 274,
+      "sku": "CELEB-274",
+      "name": "Emma Stone",
+      "imagefile": "274_Emma_Stone.jpg",
+      "category": "actors",
+      "attributes": {
+        "oscar": "yes"
+      },
+      "startVU": 228,
+      "refundDays": 14,
+      "deliveryDays": 0,
+      "stock": 25,
+      "rating": 4.4,
+      "reviewCount": 198,
+      "description": "Actor. Academy Award winner: Best Actress.",
+      "reviews": [
+        "Smooth checkout and instant delivery.",
+        "Fair price for the demo store."
+      ],
+      "source": {
+        "wikidata": "https://www.wikidata.org/wiki/Q147077",
+        "qid": "Q147077",
+        "sitelinks": 114,
+        "retrievedAt": "2026-10-18T14:48:16Z",
+        "academyAwards": [
+          "Academy Award for Best Actress"
+        ]
+      }
+    },
+    {
+      "labelId": 104,
+      "sku": "CELEB-104",
+      "name": "Brad Pitt",
+      "imagefile": "104_Brad_Pitt.jpg",
+      "category": "actors",
+      "attributes": {
+        "oscar": "yes"
+      },
+      "startVU": 294,
+      "refundDays": 14,
+      "deliveryDays": 0,
+      "stock": 25,
+      "rating": 4.2,
+      "reviewCount": 128,
+      "description": "Actor. Academy Award winner: Best Picture, Best Supporting Actor.",
+      "reviews": [
+        "Smooth checkout and instant delivery.",
+        "Fair price for the demo store."
+      ],
+      "source": {
+        "wikidata": "https://www.wikidata.org/wiki/Q35332",
+        "qid": "Q35332",
+        "sitelinks": 147,
+        "retrievedAt": "2026-10-18T14:48:16Z",
+        "academyAwards": [
+          "Academy Award for Best Picture",
+          "Academy Award for Best Supporting Actor"
+        ]
+      }
+    },
+    {
+      "labelId": 122,
+      "sku": "CELEB-122",
+      "name": "Cate Blanchett",
+      "imagefile": "122_Cate_Blanchett.jpg",
+      "category": "actors",
+      "attributes": {
+        "oscar": "yes"
+      },
+      "startVU": 266,
+      "refundDays": 14,
+      "deliveryDays": 0,
+      "stock": 25,
+      "rating": 4.4,
+      "reviewCount": 94,
+      "description": "Actor. Academy Award winner: Best Actress, Best Supporting Actress.",
+      "reviews": [
+        "Smooth checkout and instant delivery.",
+        "Fair price for the demo store."
+      ],
+      "source": {
+        "wikidata": "https://www.wikidata.org/wiki/Q80966",
+        "qid": "Q80966",
+        "sitelinks": 133,
+        "retrievedAt": "2026-10-18T14:48:16Z",
+        "academyAwards": [
+          "Academy Award for Best Actress",
+          "Academy Award for Best Supporting Actress"
+        ]
+      }
+    },
+    {
+      "labelId": 722,
+      "sku": "CELEB-722",
+      "name": "Morgan Freeman",
+      "imagefile": "722_Morgan_Freeman.jpg",
+      "category": "actors",
+      "attributes": {
+        "oscar": "yes"
+      },
+      "startVU": 254,
+      "refundDays": 14,
+      "deliveryDays": 0,
+      "stock": 25,
+      "rating": 4.4,
+      "reviewCount": 134,
+      "description": "Actor. Academy Award winner: Best Supporting Actor.",
+      "reviews": [
+        "Smooth checkout and instant delivery.",
+        "Fair price for the demo store."
+      ],
+      "source": {
+        "wikidata": "https://www.wikidata.org/wiki/Q48337",
+        "qid": "Q48337",
+        "sitelinks": 127,
+        "retrievedAt": "2026-10-18T14:48:16Z",
+        "academyAwards": [
+          "Academy Award for Best Supporting Actor"
+        ]
+      }
+    },
+    {
+      "labelId": 646,
+      "sku": "CELEB-646",
+      "name": "Margot Robbie",
+      "imagefile": "646_Margot_Robbie.jpg",
+      "category": "actors",
+      "attributes": {
+        "oscar": "no"
+      },
+      "startVU": 184,
+      "refundDays": 14,
+      "deliveryDays": 0,
+      "stock": 25,
+      "rating": 4.8,
+      "reviewCount": 82,
+      "description": "Actor.",
+      "reviews": [
+        "Smooth checkout and instant delivery.",
+        "Fair price for the demo store."
+      ],
+      "source": {
+        "wikidata": "https://www.wikidata.org/wiki/Q1924847",
+        "qid": "Q1924847",
+        "sitelinks": 92,
+        "retrievedAt": "2026-10-18T14:48:16Z",
+        "academyAwards": []
+      }
+    },
+    {
+      "labelId": 989,
+      "sku": "CELEB-989",
+      "name": "Zendaya",
+      "imagefile": "989_Zendaya.jpg",
+      "category": "actors",
+      "attributes": {
+        "oscar": "no"
+      },
+      "startVU": 208,
+      "refundDays": 14,
+      "deliveryDays": 0,
+      "stock": 25,
+      "rating": 4.7,
+      "reviewCount": 83,
+      "description": "Actor.",
+      "reviews": [
+        "Smooth checkout and instant delivery.",
+        "Fair price for the demo store."
+      ],
+      "source": {
+        "wikidata": "https://www.wikidata.org/wiki/Q189489",
+        "qid": "Q189489",
+        "sitelinks": 104,
+        "retrievedAt": "2026-10-18T14:48:16Z",
+        "academyAwards": []
+      }
+    },
+    {
+      "labelId": 845,
+      "sku": "CELEB-845",
+      "name": "Ryan Gosling",
+      "imagefile": "845_Ryan_Gosling.jpg",
+      "category": "actors",
+      "attributes": {
+        "oscar": "no"
+      },
+      "startVU": 180,
+      "refundDays": 14,
+      "deliveryDays": 0,
+      "stock": 25,
+      "rating": 4.7,
+      "reviewCount": 195,
+      "description": "Actor.",
+      "reviews": [
+        "Smooth checkout and instant delivery.",
+        "Fair price for the demo store."
+      ],
+      "source": {
+        "wikidata": "https://www.wikidata.org/wiki/Q193815",
+        "qid": "Q193815",
+        "sitelinks": 90,
+        "retrievedAt": "2026-10-18T14:48:16Z",
+        "academyAwards": []
+      }
+    },
+    {
+      "labelId": 548,
+      "sku": "CELEB-548",
+      "name": "Keanu Reeves",
+      "imagefile": "548_Keanu_Reeves.jpg",
+      "category": "actors",
+      "attributes": {
+        "oscar": "no"
+      },
+      "startVU": 248,
+      "refundDays": 7,
+      "deliveryDays": 0,
+      "stock": 25,
+      "rating": 4.6,
+      "reviewCount": 196,
+      "description": "Actor.",
+      "reviews": [
+        "Smooth checkout and instant delivery.",
+        "Fair price for the demo store."
+      ],
+      "source": {
+        "wikidata": "https://www.wikidata.org/wiki/Q43416",
+        "qid": "Q43416",
+        "sitelinks": 124,
+        "retrievedAt": "2026-10-18T14:48:16Z",
+        "academyAwards": []
+      }
+    },
+    {
+      "labelId": 914,
+      "sku": "CELEB-914",
+      "name": "Taylor Swift",
+      "imagefile": "914_Taylor_Swift.jpg",
+      "category": "musicians",
+      "attributes": {
+        "genre": "country,pop"
+      },
+      "startVU": 356,
+      "refundDays": 30,
+      "deliveryDays": 0,
+      "stock": 25,
+      "rating": 4.4,
+      "reviewCount": 198,
+      "description": "Musician. Genres on record: country, pop.",
+      "reviews": [
+        "Smooth checkout and instant delivery.",
+        "Fair price for the demo store."
+      ],
+      "source": {
+        "wikidata": "https://www.wikidata.org/wiki/Q26876",
+        "qid": "Q26876",
+        "sitelinks": 178,
+        "retrievedAt": "2026-10-18T14:48:16Z",
+        "wikidataGenres": [
+          "pop music",
+          "country music"
+        ]
+      }
+    },
+    {
+      "labelId": 15,
+      "sku": "CELEB-15",
+      "name": "Adele",
+      "imagefile": "15_Adele.jpg",
+      "category": "musicians",
+      "attributes": {
+        "genre": "pop,r&b,rock,soul"
+      },
+      "startVU": 272,
+      "refundDays": 14,
+      "deliveryDays": 0,
+      "stock": 25,
+      "rating": 4.9,
+      "reviewCount": 145,
+      "description": "Musician. Genres on record: pop, r&b, rock, soul.",
+      "reviews": [
+        "Smooth checkout and instant delivery.",
+        "Fair price for the demo store."
+      ],
+      "source": {
+        "wikidata": "https://www.wikidata.org/wiki/Q23215",
+        "qid": "Q23215",
+        "sitelinks": 136,
+        "retrievedAt": "2026-10-18T14:48:16Z",
+        "wikidataGenres": [
+          "pop music",
+          "blue-eyed soul",
+          "rhythm and blues",
+          "soul",
+          "jazz",
+          "rock music"
+        ]
+      }
+    },
+    {
+      "labelId": 581,
+      "sku": "CELEB-581",
+      "name": "Lady Gaga",
+      "imagefile": "581_Lady_Gaga.jpg",
+      "category": "musicians",
+      "attributes": {
+        "genre": "electronic,pop"
+      },
+      "startVU": 394,
+      "refundDays": 14,
+      "deliveryDays": 0,
+      "stock": 25,
+      "rating": 4.7,
+      "reviewCount": 107,
+      "description": "Musician. Genres on record: electronic, pop.",
+      "reviews": [
+        "Smooth checkout and instant delivery.",
+        "Fair price for the demo store."
+      ],
+      "source": {
+        "wikidata": "https://www.wikidata.org/wiki/Q19848",
+        "qid": "Q19848",
+        "sitelinks": 197,
+        "retrievedAt": "2026-10-18T14:48:16Z",
+        "wikidataGenres": [
+          "electropop",
+          "dance-pop",
+          "electronic dance music",
+          "art pop",
+          "pop music",
+          "synth-pop"
+        ]
+      }
+    },
+    {
+      "labelId": 234,
+      "sku": "CELEB-234",
+      "name": "Ed Sheeran",
+      "imagefile": "234_Ed_Sheeran.jpg",
+      "category": "musicians",
+      "attributes": {
+        "genre": "hip-hop,pop,rock,soul"
+      },
+      "startVU": 188,
+      "refundDays": 14,
+      "deliveryDays": 0,
+      "stock": 25,
+      "rating": 4.4,
+      "reviewCount": 78,
+      "description": "Musician. Genres on record: hip-hop, pop, rock, soul.",
+      "reviews": [
+        "Smooth checkout and instant delivery.",
+        "Fair price for the demo store."
+      ],
+      "source": {
+        "wikidata": "https://www.wikidata.org/wiki/Q47447",
+        "qid": "Q47447",
+        "sitelinks": 94,
+        "retrievedAt": "2026-10-18T14:48:16Z",
+        "wikidataGenres": [
+          "pop music",
+          "folk music",
+          "hip-hop",
+          "dance music",
+          "soul",
+          "rock music"
+        ]
+      }
+    },
+    {
+      "labelId": 817,
+      "sku": "CELEB-817",
+      "name": "Rihanna",
+      "imagefile": "817_Rihanna.jpg",
+      "category": "musicians",
+      "attributes": {
+        "genre": "electronic,pop,r&b"
+      },
+      "startVU": 314,
+      "refundDays": 14,
+      "deliveryDays": 0,
+      "stock": 25,
+      "rating": 4.3,
+      "reviewCount": 159,
+      "description": "Musician. Genres on record: electronic, pop, r&b.",
+      "reviews": [
+        "Smooth checkout and instant delivery.",
+        "Fair price for the demo store."
+      ],
+      "source": {
+        "wikidata": "https://www.wikidata.org/wiki/Q36844",
+        "qid": "Q36844",
+        "sitelinks": 157,
+        "retrievedAt": "2026-10-18T14:48:16Z",
+        "wikidataGenres": [
+          "pop music",
+          "dancehall",
+          "contemporary R&B",
+          "electronic dance music",
+          "adult contemporary music"
+        ]
+      }
+    },
+    {
+      "labelId": 96,
+      "sku": "CELEB-96",
+      "name": "Billie Eilish",
+      "imagefile": "96_Billie_Eilish.jpg",
+      "category": "musicians",
+      "attributes": {
+        "genre": "pop"
+      },
+      "startVU": 250,
+      "refundDays": 14,
+      "deliveryDays": 0,
+      "stock": 25,
+      "rating": 4.2,
+      "reviewCount": 72,
+      "description": "Musician. Genres on record: pop.",
+      "reviews": [
+        "Smooth checkout and instant delivery.",
+        "Fair price for the demo store."
+      ],
+      "source": {
+        "wikidata": "https://www.wikidata.org/wiki/Q29564107",
+        "qid": "Q29564107",
+        "sitelinks": 125,
+        "retrievedAt": "2026-10-18T14:48:16Z",
+        "wikidataGenres": [
+          "electropop",
+          "indie pop",
+          "alternative pop"
+        ]
+      }
+    },
+    {
+      "labelId": 228,
+      "sku": "CELEB-228",
+      "name": "Dua Lipa",
+      "imagefile": "228_Dua_Lipa.jpg",
+      "category": "musicians",
+      "attributes": {
+        "genre": "electronic,pop"
+      },
+      "startVU": 226,
+      "refundDays": 14,
+      "deliveryDays": 0,
+      "stock": 25,
+      "rating": 4.6,
+      "reviewCount": 196,
+      "description": "Musician. Genres on record: electronic, pop.",
+      "reviews": [
+        "Smooth checkout and instant delivery.",
+        "Fair price for the demo store."
+      ],
+      "source": {
+        "wikidata": "https://www.wikidata.org/wiki/Q21914464",
+        "qid": "Q21914464",
+        "sitelinks": 113,
+        "retrievedAt": "2026-10-18T14:48:16Z",
+        "wikidataGenres": [
+          "pop music",
+          "post-disco",
+          "house music",
+          "funktronica",
+          "indie pop",
+          "dream pop",
+          "synth-pop"
+        ]
+      }
+    },
+    {
+      "labelId": 341,
+      "sku": "CELEB-341",
+      "name": "Harry Styles",
+      "imagefile": "341_Harry_Styles.jpg",
+      "category": "musicians",
+      "attributes": {
+        "genre": "pop,rock"
+      },
+      "startVU": 166,
+      "refundDays": 14,
+      "deliveryDays": 0,
+      "stock": 25,
+      "rating": 4.7,
+      "reviewCount": 187,
+      "description": "Musician. Genres on record: pop, rock.",
+      "reviews": [
+        "Smooth checkout and instant delivery.",
+        "Fair price for the demo store."
+      ],
+      "source": {
+        "wikidata": "https://www.wikidata.org/wiki/Q3626966",
+        "qid": "Q3626966",
+        "sitelinks": 83,
+        "retrievedAt": "2026-10-18T14:48:16Z",
+        "wikidataGenres": [
+          "soft rock",
+          "pop music",
+          "rock music",
+          "Britpop",
+          "traditional folk music"
+        ]
+      }
+    },
+    {
+      "labelId": 74,
+      "sku": "CELEB-74",
+      "name": "Ariana Grande",
+      "imagefile": "74_Ariana_Grande.jpg",
+      "category": "musicians",
+      "attributes": {
+        "genre": "electronic,pop,r&b"
+      },
+      "startVU": 282,
+      "refundDays": 14,
+      "deliveryDays": 0,
+      "stock": 25,
+      "rating": 4.4,
+      "reviewCount": 78,
+      "description": "Musician. Genres on record: electronic, pop, r&b.",
+      "reviews": [
+        "Smooth checkout and instant delivery.",
+        "Fair price for the demo store."
+      ],
+      "source": {
+        "wikidata": "https://www.wikidata.org/wiki/Q151892",
+        "qid": "Q151892",
+        "sitelinks": 141,
+        "retrievedAt": "2026-10-18T14:48:16Z",
+        "wikidataGenres": [
+          "pop music",
+          "contemporary R&B",
+          "electronic dance music"
+        ]
+      }
+    },
+    {
+      "labelId": 919,
+      "sku": "CELEB-919",
+      "name": "The Weeknd",
+      "imagefile": "919_The_Weeknd.jpg",
+      "category": "musicians",
+      "attributes": {
+        "genre": "pop,r&b"
+      },
+      "startVU": 146,
+      "refundDays": 14,
+      "deliveryDays": 0,
+      "stock": 25,
+      "rating": 4.9,
+      "reviewCount": 73,
+      "description": "Musician. Genres on record: pop, r&b.",
+      "reviews": [
+        "Smooth checkout and instant delivery.",
+        "Fair price for the demo store."
+      ],
+      "source": {
+        "wikidata": "https://www.wikidata.org/wiki/Q2121062",
+        "qid": "Q2121062",
+        "sitelinks": 73,
+        "retrievedAt": "2026-10-18T14:48:16Z",
+        "wikidataGenres": [
+          "alternative R&B",
+          "pop music",
+          "electropop"
+        ]
+      }
+    },
+    {
+      "labelId": 879,
+      "sku": "CELEB-879",
+      "name": "Shakira",
+      "imagefile": "879_Shakira.jpg",
+      "category": "musicians",
+      "attributes": {
+        "genre": "latin,pop,r&b,rock"
+      },
+      "startVU": 400,
+      "refundDays": 14,
+      "deliveryDays": 0,
+      "stock": 25,
+      "rating": 4.9,
+      "reviewCount": 113,
+      "description": "Musician. Genres on record: latin, pop, r&b, rock.",
+      "reviews": [
+        "Smooth checkout and instant delivery.",
+        "Fair price for the demo store."
+      ],
+      "source": {
+        "wikidata": "https://www.wikidata.org/wiki/Q34424",
+        "qid": "Q34424",
+        "sitelinks": 236,
+        "retrievedAt": "2026-10-18T14:48:16Z",
+        "wikidataGenres": [
+          "pop music",
+          "Latin pop",
+          "pop rock",
+          "Latin rock",
+          "dance music",
+          "folk music",
+          "world music",
+          "contemporary R&B",
+          "rock music"
+        ]
+      }
+    },
+    {
+      "labelId": 412,
+      "sku": "CELEB-412",
+      "name": "Jay-Z",
+      "imagefile": "412_Jay-Z.jpg",
+      "category": "musicians",
+      "attributes": {
+        "genre": "hip-hop"
+      },
+      "startVU": 176,
+      "refundDays": 14,
+      "deliveryDays": 0,
+      "stock": 25,
+      "rating": 4.6,
+      "reviewCount": 44,
+      "description": "Musician. Genres on record: hip-hop.",
+      "reviews": [
+        "Smooth checkout and instant delivery.",
+        "Fair price for the demo store."
+      ],
+      "source": {
+        "wikidata": "https://www.wikidata.org/wiki/Q62766",
+        "qid": "Q62766",
+        "sitelinks": 88,
+        "retrievedAt": "2026-10-18T14:48:16Z",
+        "wikidataGenres": [
+          "East Coast hip-hop",
+          "mafioso rap",
+          "gangsta rap",
+          "hardcore hip-hop"
+        ]
+      }
+    },
+    {
+      "labelId": 546,
+      "sku": "CELEB-546",
+      "name": "Katy Perry",
+      "imagefile": "546_Katy_Perry.jpg",
+      "category": "musicians",
+      "attributes": {
+        "genre": "pop,rock"
+      },
+      "startVU": 272,
+      "refundDays": 7,
+      "deliveryDays": 0,
+      "stock": 25,
+      "rating": 4.4,
+      "reviewCount": 182,
+      "description": "Musician. Genres on record: pop, rock.",
+      "reviews": [
+        "Smooth checkout and instant delivery.",
+        "Fair price for the demo store."
+      ],
+      "source": {
+        "wikidata": "https://www.wikidata.org/wiki/Q42493",
+        "qid": "Q42493",
+        "sitelinks": 136,
+        "retrievedAt": "2026-10-18T14:48:16Z",
+        "wikidataGenres": [
+          "pop music",
+          "rock music",
+          "pop rock",
+          "dance music",
+          "synth-pop",
+          "electropop",
+          "gospel music"
+        ]
+      }
+    },
+    {
+      "labelId": 874,
+      "sku": "CELEB-874",
+      "name": "Serena Williams",
+      "imagefile": "874_Serena_Williams.jpg",
+      "category": "athletes",
+      "attributes": {
+        "sport": "tennis"
+      },
+      "startVU": 250,
+      "refundDays": 14,
+      "deliveryDays": 0,
+      "stock": 25,
+      "rating": 4.4,
+      "reviewCount": 78,
+      "description": "Athlete: tennis.",
+      "reviews": [
+        "Smooth checkout and instant delivery.",
+        "Fair price for the demo store."
+      ],
+      "source": {
+        "wikidata": "https://www.wikidata.org/wiki/Q11459",
+        "qid": "Q11459",
+        "sitelinks": 125,
+        "retrievedAt": "2026-10-18T14:48:16Z",
+        "wikidataSports": [
+          "tennis"
+        ]
+      }
+    },
+    {
+      "labelId": 830,
+      "sku": "CELEB-830",
+      "name": "Roger Federer",
+      "imagefile": "830_Roger_Federer.jpg",
+      "category": "athletes",
+      "attributes": {
+        "sport": "tennis"
+      },
+      "startVU": 320,
+      "refundDays": 30,
+      "deliveryDays": 0,
+      "stock": 25,
+      "rating": 4.8,
+      "reviewCount": 90,
+      "description": "Athlete: tennis.",
+      "reviews": [
+        "Smooth checkout and instant delivery.",
+        "Fair price for the demo store."
+      ],
+      "source": {
+        "wikidata": "https://www.wikidata.org/wiki/Q1426",
+        "qid": "Q1426",
+        "sitelinks": 160,
+        "retrievedAt": "2026-10-18T14:48:16Z",
+        "wikidataSports": [
+          "tennis"
+        ]
+      }
+    },
+    {
+      "labelId": 614,
+      "sku": "CELEB-614",
+      "name": "Lionel Messi",
+      "imagefile": "614_Lionel_Messi.jpg",
+      "category": "athletes",
+      "attributes": {
+        "sport": "soccer"
+      },
+      "startVU": 400,
+      "refundDays": 14,
+      "deliveryDays": 0,
+      "stock": 25,
+      "rating": 4.8,
+      "reviewCount": 178,
+      "description": "Athlete: soccer.",
+      "reviews": [
+        "Smooth checkout and instant delivery.",
+        "Fair price for the demo store."
+      ],
+      "source": {
+        "wikidata": "https://www.wikidata.org/wiki/Q615",
+        "qid": "Q615",
+        "sitelinks": 226,
+        "retrievedAt": "2026-10-18T14:48:16Z",
+        "wikidataSports": [
+          "association football"
+        ]
+      }
+    },
+    {
+      "labelId": 176,
+      "sku": "CELEB-176",
+      "name": "Cristiano Ronaldo",
+      "imagefile": "176_Cristiano_Ronaldo.jpg",
+      "category": "athletes",
+      "attributes": {
+        "sport": "soccer"
+      },
+      "startVU": 400,
+      "refundDays": 14,
+      "deliveryDays": 0,
+      "stock": 25,
+      "rating": 4.2,
+      "reviewCount": 152,
+      "description": "Athlete: soccer.",
+      "reviews": [
+        "Smooth checkout and instant delivery.",
+        "Fair price for the demo store."
+      ],
+      "source": {
+        "wikidata": "https://www.wikidata.org/wiki/Q11571",
+        "qid": "Q11571",
+        "sitelinks": 214,
+        "retrievedAt": "2026-10-18T14:48:16Z",
+        "wikidataSports": [
+          "association football"
+        ]
+      }
+    },
+    {
+      "labelId": 592,
+      "sku": "CELEB-592",
+      "name": "LeBron James",
+      "imagefile": "592_LeBron_James.jpg",
+      "category": "athletes",
+      "attributes": {
+        "sport": "basketball"
+      },
+      "startVU": 224,
+      "refundDays": 14,
+      "deliveryDays": 0,
+      "stock": 25,
+      "rating": 4.2,
+      "reviewCount": 184,
+      "description": "Athlete: basketball.",
+      "reviews": [
+        "Smooth checkout and instant delivery.",
+        "Fair price for the demo store."
+      ],
+      "source": {
+        "wikidata": "https://www.wikidata.org/wiki/Q36159",
+        "qid": "Q36159",
+        "sitelinks": 112,
+        "retrievedAt": "2026-10-18T14:48:16Z",
+        "wikidataSports": [
+          "basketball"
+        ]
+      }
+    },
+    {
+      "labelId": 956,
+      "sku": "CELEB-956",
+      "name": "Usain Bolt",
+      "imagefile": "956_Usain_Bolt.jpg",
+      "category": "athletes",
+      "attributes": {
+        "sport": "track and field"
+      },
+      "startVU": 272,
+      "refundDays": 14,
+      "deliveryDays": 0,
+      "stock": 25,
+      "rating": 4.6,
+      "reviewCount": 172,
+      "description": "Athlete: track and field.",
+      "reviews": [
+        "Smooth checkout and instant delivery.",
+        "Fair price for the demo store."
+      ],
+      "source": {
+        "wikidata": "https://www.wikidata.org/wiki/Q1189",
+        "qid": "Q1189",
+        "sitelinks": 136,
+        "retrievedAt": "2026-10-18T14:48:16Z",
+        "wikidataSports": [
+          "athletics",
+          "association football"
+        ]
+      }
+    },
+    {
+      "labelId": 892,
+      "sku": "CELEB-892",
+      "name": "Simone Biles",
+      "imagefile": "892_Simone_Biles.jpg",
+      "category": "athletes",
+      "attributes": {
+        "sport": "gymnastics"
+      },
+      "startVU": 146,
+      "refundDays": 14,
+      "deliveryDays": 0,
+      "stock": 25,
+      "rating": 4.6,
+      "reviewCount": 44,
+      "description": "Athlete: gymnastics.",
+      "reviews": [
+        "Smooth checkout and instant delivery.",
+        "Fair price for the demo store."
+      ],
+      "source": {
+        "wikidata": "https://www.wikidata.org/wiki/Q7520267",
+        "qid": "Q7520267",
+        "sitelinks": 73,
+        "retrievedAt": "2026-10-18T14:48:16Z",
+        "wikidataSports": [
+          "artistic gymnastics"
+        ]
+      }
+    },
+    {
+      "labelId": 700,
+      "sku": "CELEB-700",
+      "name": "Michael Phelps",
+      "imagefile": "700_Michael_Phelps.jpg",
+      "category": "athletes",
+      "attributes": {
+        "sport": "swimming"
+      },
+      "startVU": 216,
+      "refundDays": 14,
+      "deliveryDays": 0,
+      "stock": 25,
+      "rating": 4.6,
+      "reviewCount": 140,
+      "description": "Athlete: swimming.",
+      "reviews": [
+        "Smooth checkout and instant delivery.",
+        "Fair price for the demo store."
+      ],
+      "source": {
+        "wikidata": "https://www.wikidata.org/wiki/Q39562",
+        "qid": "Q39562",
+        "sitelinks": 108,
+        "retrievedAt": "2026-10-18T14:48:16Z",
+        "wikidataSports": [
+          "competitive swimming"
+        ]
+      }
+    },
+    {
+      "labelId": 936,
+      "sku": "CELEB-936",
+      "name": "Tom Brady",
+      "imagefile": "936_Tom_Brady.jpg",
+      "category": "athletes",
+      "attributes": {
+        "sport": "american football"
+      },
+      "startVU": 116,
+      "refundDays": 7,
+      "deliveryDays": 0,
+      "stock": 25,
+      "rating": 4.2,
+      "reviewCount": 192,
+      "description": "Athlete: american football.",
+      "reviews": [
+        "Smooth checkout and instant delivery.",
+        "Fair price for the demo store."
+      ],
+      "source": {
+        "wikidata": "https://www.wikidata.org/wiki/Q313381",
+        "qid": "Q313381",
+        "sitelinks": 58,
+        "retrievedAt": "2026-10-18T14:48:16Z",
+        "wikidataSports": [
+          "American football"
+        ]
+      }
+    },
+    {
+      "labelId": 754,
+      "sku": "CELEB-754",
+      "name": "Novak Djokovic",
+      "imagefile": "754_Novak_Djokovic.jpg",
+      "category": "athletes",
+      "attributes": {
+        "sport": "tennis"
+      },
+      "startVU": 306,
+      "refundDays": 14,
+      "deliveryDays": 0,
+      "stock": 25,
+      "rating": 4.4,
+      "reviewCount": 198,
+      "description": "Athlete: tennis.",
+      "reviews": [
+        "Smooth checkout and instant delivery.",
+        "Fair price for the demo store."
+      ],
+      "source": {
+        "wikidata": "https://www.wikidata.org/wiki/Q5812",
+        "qid": "Q5812",
+        "sitelinks": 153,
+        "retrievedAt": "2026-10-18T14:48:16Z",
+        "wikidataSports": [
+          "tennis"
+        ]
+      }
+    },
+    {
+      "labelId": 602,
+      "sku": "CELEB-602",
+      "name": "Lewis Hamilton",
+      "imagefile": "602_Lewis_Hamilton.jpg",
+      "category": "athletes",
+      "attributes": {
+        "sport": "motor racing"
+      },
+      "startVU": 232,
+      "refundDays": 14,
+      "deliveryDays": 0,
+      "stock": 25,
+      "rating": 4.4,
+      "reviewCount": 94,
+      "description": "Athlete: motor racing.",
+      "reviews": [
+        "Smooth checkout and instant delivery.",
+        "Fair price for the demo store."
+      ],
+      "source": {
+        "wikidata": "https://www.wikidata.org/wiki/Q9673",
+        "qid": "Q9673",
+        "sitelinks": 116,
+        "retrievedAt": "2026-10-18T14:48:16Z",
+        "wikidataSports": [
+          "kart racing",
+          "auto racing",
+          "Formula One"
+        ]
+      }
+    },
+    {
+      "labelId": 900,
+      "sku": "CELEB-900",
+      "name": "Stephen Curry",
+      "imagefile": "900_Stephen_Curry.jpg",
+      "category": "athletes",
+      "attributes": {
+        "sport": "basketball"
+      },
+      "startVU": 152,
+      "refundDays": 14,
+      "deliveryDays": 0,
+      "stock": 25,
+      "rating": 4.6,
+      "reviewCount": 100,
+      "description": "Athlete: basketball.",
+      "reviews": [
+        "Smooth checkout and instant delivery.",
+        "Fair price for the demo store."
+      ],
+      "source": {
+        "wikidata": "https://www.wikidata.org/wiki/Q352159",
+        "qid": "Q352159",
+        "sitelinks": 76,
+        "retrievedAt": "2026-10-18T14:48:16Z",
+        "wikidataSports": [
+          "basketball"
+        ]
+      }
+    }
+  ]
+}

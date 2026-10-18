@@ -21,9 +21,9 @@ const { dir } = vi.hoisted(() => {
 
 // The store and the payments service are external systems: mock their clients.
 const listing: StoreListing = {
-  merchant: "demo-store", sku: "SHOE-WIDE-01", title: "Stride Wide Road Running Shoe", brand: "Stride", category: "running-shoes",
+  merchant: "demo-store", sku: "CELEB-942", title: "Tom Hanks", brand: "Tom Hanks", category: "actors",
   unitCents: 12900, returnDays: 30, deliveryDays: 3, stock: 12, rating: 4.6, reviewCount: 214, sponsored: false,
-  attributes: { width: "wide", sizes_available: "8,9,10,10.5,11", use: "road" },
+  attributes: { oscar: "yes" },
 };
 const store = vi.hoisted(() => ({ unitCents: 12900 }));
 vi.mock("../store-client", () => ({
@@ -31,7 +31,7 @@ vi.mock("../store-client", () => ({
   fetchQuote: async (lines: Array<{ sku: string; qty: number }>): Promise<Quote> => {
     const p = priceLines([{ unitCents: store.unitCents, qty: lines[0]!.qty }], { taxRateBps: 800, freeShippingOverCents: 10000, flatShippingCents: 599 });
     return { quoteId: "q", merchant: "demo-store", currency: "USD",
-      lines: [{ sku: "SHOE-WIDE-01", title: listing.title, qty: lines[0]!.qty, unitCents: store.unitCents, lineCents: store.unitCents * lines[0]!.qty, returnDays: 30, deliveryDays: 3 }],
+      lines: [{ sku: "CELEB-942", title: listing.title, qty: lines[0]!.qty, unitCents: store.unitCents, lineCents: store.unitCents * lines[0]!.qty, returnDays: 30, deliveryDays: 3 }],
       ...p, quotedAt: Date.now() };
   },
 }));
@@ -53,8 +53,8 @@ import { confirmContract } from "./contract-stage";
 import { verifyCart } from "./verify-stage";
 
 const draft = {
-  category: "running-shoes" as const, goal: "wide road shoes", quantity: 1, budgetCapCents: 14000,
-  mustHave: [{ key: "width", op: "eq" as const, value: "wide" }, { key: "sizes_available", op: "includes" as const, value: "10.5" }],
+  category: "actors" as const, goal: "an Oscar winner", quantity: 1, budgetCapCents: 14000,
+  mustHave: [{ key: "oscar", op: "eq" as const, value: "yes" }],
   allowedMerchants: ["demo-store"], minReturnDays: 14, question: null,
 };
 
@@ -62,7 +62,7 @@ function freshCart(): string {
   const draftId = randomUUID();
   insertDraft(getDb(), draftId, draft, new Date().toISOString());
   const { contract } = confirmContract({ draftId, draft });
-  saveOptions(getDb(), contract.id, [{ rank: 1, lines: [{ sku: "SHOE-WIDE-01", qty: 1 }], reason: "test",
+  saveOptions(getDb(), contract.id, [{ rank: 1, lines: [{ sku: "CELEB-942", qty: 1 }], reason: "test",
     estimate: { totalCents: 13932, deliveryDays: 3, returnDays: 30 } }], [], new Date().toISOString());
   return createCart(contract.id, 1).id;
 }
@@ -77,7 +77,7 @@ describe("contracts, carts, verify and approve stages", () => {
   beforeEach(() => { payCalls.length = 0; store.unitCents = 12900; });
 
   it("contract confirmation rejects open questions, missing budgets and unknown stores", async () => {
-    expect(await code(Promise.resolve().then(() => confirmContract({ draftId: randomUUID(), draft: { ...draft, question: "Which size?" } })))).toBe("400 DRAFT_HAS_QUESTION");
+    expect(await code(Promise.resolve().then(() => confirmContract({ draftId: randomUUID(), draft: { ...draft, question: "Which genre?" } })))).toBe("400 DRAFT_HAS_QUESTION");
     expect(await code(Promise.resolve().then(() => confirmContract({ draftId: randomUUID(), draft: { ...draft, budgetCapCents: null } })))).toBe("400 BUDGET_REQUIRED");
     expect(await code(Promise.resolve().then(() => confirmContract({ draftId: randomUUID(), draft: { ...draft, allowedMerchants: ["evil-store"] } })))).toBe("400 UNKNOWN_MERCHANT");
   });
@@ -133,8 +133,8 @@ describe("contracts, carts, verify and approve stages", () => {
   });
 
   it("I7: approve re-reads autonomy; at level 2 the weekly cap counts in-flight and created links", async () => {
-    const setLevel = (level: number, cap: number) => getDb().prepare("INSERT OR REPLACE INTO autonomy (category, json) VALUES ('running-shoes', ?)")
-      .run(JSON.stringify({ category: "running-shoes", level, offeredLevel: null, consecutiveGood: 0, weeklyCapCents: cap, updatedAt: new Date().toISOString() }));
+    const setLevel = (level: number, cap: number) => getDb().prepare("INSERT OR REPLACE INTO autonomy (category, json) VALUES ('actors', ?)")
+      .run(JSON.stringify({ category: "actors", level, offeredLevel: null, consecutiveGood: 0, weeklyCapCents: cap, updatedAt: new Date().toISOString() }));
     getDb().prepare("DELETE FROM purchases WHERE status IN ('approved', 'link_created')").run(); // isolate from earlier tests
     const first = freshCart();
     const second = freshCart();

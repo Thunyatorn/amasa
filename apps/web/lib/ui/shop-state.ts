@@ -61,7 +61,7 @@ export const REMOVED_WORDS: Record<string, string> = {
   MERCHANT_NOT_ALLOWED: "from a store your contract doesn't allow",
   OUT_OF_STOCK: "out of stock",
   MUST_HAVE_FAILED: "missing one of your requirements",
-  OVER_BUDGET: "over your budget, including tax and shipping",
+  OVER_BUDGET: "over your budget, including tax",
   RETURN_WINDOW_SHORT: "return window shorter than you asked",
   DEADLINE_MISSED: "won't arrive by your deadline",
 };

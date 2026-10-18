@@ -10,3 +10,4 @@ export * from "./profile.ts";
 export * from "./purchase.ts";
 export * from "./progress.ts";
 export * from "./pricing.ts";
+export * from "./celebrity.ts";

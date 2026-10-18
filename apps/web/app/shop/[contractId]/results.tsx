@@ -1,19 +1,18 @@
 import type { ProgressEvent } from "../../../lib/ui/sse.ts";
 import { filteredCount, REMOVED_WORDS, type ShopState } from "../../../lib/ui/shop-state.ts";
-import { CategoryIllustration, type ShoppingCategory } from "../../category-illustration.tsx";
+import type { ShoppingCategory } from "../../category-illustration.tsx";
 
 // Screen 4 (SPEC §16): no hooks here, so every piece renders the same in tests and in the app. All
 // text from models or the store is rendered as plain text.
 type OptionsEvent = Extract<ProgressEvent, { type: "options" }>;
 
-export const money = (cents: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
+import { dollars, vu as money } from "../../../lib/vu.ts";
+
+export { dollars, money };
 const days = (n: number) => `${n} ${n === 1 ? "day" : "days"}`;
+export const photoUrl = (sku: string) => `/api/store/products/${encodeURIComponent(sku)}/image`;
 export const arrivalDate = (deliveryDays: number, now: number) =>
   new Date(now + deliveryDays * 86_400_000).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
-
-const FIT_WORDS: Record<string, string> = {
-  runs_small: "runs small", runs_large: "runs large", true_to_size: "true to size", wide_friendly: "good for wide feet", narrow: "narrow fit",
-};
 
 export function StepList({ steps, live }: { steps: string[]; live: boolean }) {
   return <ol className="steps" aria-live={live ? "polite" : "off"}>{steps.map((step, i) => <li key={`${i}-${step}`}>{step}</li>)}</ol>;
@@ -26,8 +25,7 @@ function WhyPanel({ detail, id }: { detail: OptionsEvent["details"][number]; id:
     <h4>Data used</h4>
     <ul>{detail.dataUsed.map((item) => <li key={item}>{item}</li>)}</ul>
     {detail.products.map((product) => {
-      const facts = [...product.facts.fitNotes.map((f) => FIT_WORDS[f] ?? f), ...product.facts.praise.map((p) => `praised for ${p}`),
-        ...product.facts.complaints.map((c) => `complaints about ${c}`)];
+      const facts = [...product.facts.praise.map((p) => `praised for ${p}`), ...product.facts.complaints.map((c) => `complaints about ${c}`)];
       return <div key={product.sku}>
         <h4>From the store&apos;s reviews of {product.title}</h4>
         <p className="hint">Rated {product.rating.toFixed(1)} from {product.reviewCount} reviews. Summary written by AI from the reviews: {facts.length ? facts.join(", ") : "nothing clear"}.</p>
@@ -48,15 +46,17 @@ export function OptionCards({ result, open, onToggle, now, onChoose, chooseDisab
     const panelId = `why-${option.rank}`;
     return <li key={option.rank} className="option">
       <div className="proposal-label"><span>Shopping proposal</span><span>0{option.rank}</span></div>
-      {category && <CategoryIllustration category={category} />}
+      {products.length > 0 && <div className={`option-photos${category ? ` category-${category}` : ""}`}>
+        {products.map((p) => <img key={p.sku} src={photoUrl(p.sku)} alt={p.title} width={160} height={160} loading="lazy" />)}
+      </div>}
       <h3>{option.rank}. {products.map((p) => p.title).join(" + ") || option.lines.map((l) => l.sku).join(" + ")}</h3>
       <div className="option-disclosure">{products.some((p) => p.sponsored) && <p className="sponsored">Sponsored</p>}</div>
       <p className="option-reason">{option.reason}</p>
-      <div className="option-total"><span className="price">{money(option.estimate.totalCents)}</span><span className="hint">Total · includes tax and shipping</span></div>
+      <div className="option-total"><span className="price">{money(option.estimate.totalCents)}</span><span className="hint">Total · includes tax · 1 VU = $1.00</span></div>
       <dl className="facts">
-        <div><dt>Delivery</dt><dd>Arrives by {arrivalDate(option.estimate.deliveryDays, now)} ({days(option.estimate.deliveryDays)})</dd></div>
-        <div><dt>Returns</dt><dd>{days(option.estimate.returnDays)}</dd></div>
-        {products.map((p) => <div key={p.sku}><dt>Stock</dt><dd>Store says: {p.stock} in stock</dd></div>)}
+        <div><dt>Delivery</dt><dd>{option.estimate.deliveryDays === 0 ? "Instant" : `Arrives by ${arrivalDate(option.estimate.deliveryDays, now)} (${days(option.estimate.deliveryDays)})`}</dd></div>
+        <div><dt>Refund window</dt><dd>{days(option.estimate.returnDays)}</dd></div>
+        {products.map((p) => <div key={p.sku}><dt>Availability</dt><dd>Store says: {p.stock} available</dd></div>)}
       </dl>
       <div className="card-actions">
         {detail && <button type="button" className="secondary" aria-expanded={open.has(option.rank)} aria-controls={panelId} onClick={() => onToggle(option.rank)}>Why?</button>}

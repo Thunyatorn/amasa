@@ -12,9 +12,9 @@ const ruleText = (rule: Contract["mustHave"][number]) => `${rule.key.replaceAll(
 
 export function dataUsed(contract: Contract, profile: readonly ProfileEntry[]): string[] {
   return [
-    `Your contract: budget ${money(contract.budgetCapCents)} including tax and shipping`,
+    `Your contract: budget ${money(contract.budgetCapCents)} including tax`,
     `Your contract: quantity ${contract.quantity}`,
-    `Your contract: at least ${contract.minReturnDays}-day returns`,
+    `Your contract: a refund window of at least ${contract.minReturnDays} days`,
     ...(contract.deadline ? [`Your contract: arrives by ${contract.deadline}`] : []),
     ...contract.mustHave.map((rule) => `Your contract: ${ruleText(rule)}`),
     ...profile.map((entry) => `Your confirmed profile: ${entry.key.replaceAll("_", " ")} ${entry.value}`),
@@ -30,12 +30,12 @@ export function buildDetails(contract: Contract, profile: readonly ProfileEntry[
       const { listing, facts, reviewQuotes } = checked.get(sku)!;
       return { sku, title: listing.title, brand: listing.brand, sponsored: listing.sponsored, stock: listing.stock,
         rating: listing.rating, reviewCount: listing.reviewCount, returnDays: listing.returnDays, deliveryDays: listing.deliveryDays,
-        facts: { fitNotes: facts.fitNotes, praise: facts.praise, complaints: facts.complaints }, reviewQuotes };
+        facts: { praise: facts.praise, complaints: facts.complaints }, reviewQuotes };
     }),
     checks: [
-      `Total ${money(option.estimate.totalCents)} is within your ${money(contract.budgetCapCents)} budget, including tax and shipping`,
-      `${option.estimate.returnDays}-day returns; you asked for at least ${contract.minReturnDays}`,
-      `Arrives in ${option.estimate.deliveryDays} ${option.estimate.deliveryDays === 1 ? "day" : "days"}${contract.deadline ? `, by your ${contract.deadline} deadline` : ""}`,
+      `Total ${money(option.estimate.totalCents)} is within your ${money(contract.budgetCapCents)} budget, including tax`,
+      `${option.estimate.returnDays}-day refund window; you asked for at least ${contract.minReturnDays}`,
+      `${option.estimate.deliveryDays === 0 ? "Instant delivery" : `Arrives in ${option.estimate.deliveryDays} ${option.estimate.deliveryDays === 1 ? "day" : "days"}`}${contract.deadline ? `, by your ${contract.deadline} deadline` : ""}`,
       ...contract.mustHave.map((rule) => `${ruleText(rule)}: yes, from the store's product data`),
     ].slice(0, 16),
     dataUsed: used,

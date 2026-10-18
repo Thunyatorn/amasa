@@ -16,10 +16,10 @@ import { INTAKE_SYSTEM_PROMPT, PLANNER_SYSTEM_PROMPT } from "./prompts.ts";
 import { STORE_ATTRIBUTES } from "../store-attributes.ts";
 import { describeIntakeError, mentionsTiming, normalizeDraft, runIntake } from "./intake.ts";
 
-const goal = "wide running shoes for a half marathon, size 10.5, under $140, must be returnable";
+const goal = "a pop musician for my collection, under 250 VU, must be refundable";
 const draft: ContractDraft = {
-  category: "running-shoes", goal: "model copy", quantity: 1, budgetCapCents: 14000,
-  mustHave: [{ key: "width", op: "eq", value: "wide" }, { key: "size", op: "eq", value: 10.5 }],
+  category: "musicians", goal: "model copy", quantity: 1, budgetCapCents: 25000,
+  mustHave: [{ key: "genre", op: "eq", value: "Pop" }],
   allowedMerchants: ["untrusted-store"], minReturnDays: 14, question: null,
 };
 const input = { goal, profile: [], today: "2026-10-17" };
@@ -56,19 +56,19 @@ describe("intake model boundary", () => {
   });
 
   it("describes exactly the attributes present in the store for every category", () => {
-    const data = JSON.parse(readFileSync(join(repoRoot(), "data/products.json"), "utf8")) as {
-      products: { listing: { category: string; attributes: Record<string, unknown> } }[];
+    const data = JSON.parse(readFileSync(join(repoRoot(), "data/celebrities/demo-set.json"), "utf8")) as {
+      celebrities: { category: string; attributes: Record<string, unknown> }[];
     };
     for (const category of Category.options) {
-      const keys = new Set(data.products.filter(({ listing }) => listing.category === category).flatMap(({ listing }) => Object.keys(listing.attributes)));
+      const keys = new Set(data.celebrities.filter((c) => c.category === category).flatMap((c) => Object.keys(c.attributes)));
       expect(Object.keys(STORE_ATTRIBUTES[category]).sort()).toEqual([...keys].sort());
     }
   });
 
-  it("normalizes sizes, merchants and the user's original goal", async () => {
+  it("normalizes genre, merchants and the user's original goal", async () => {
     const { draft: result, unsupported } = await runIntake({ ...input, goal: `  ${goal}  ` }, { model: modelReply() });
-    expect(result).toMatchObject({ budgetCapCents: 14000, goal, allowedMerchants: ["demo-store"] });
-    expect(result.mustHave).toEqual([{ key: "width", op: "eq", value: "wide" }, { key: "sizes_available", op: "includes", value: "10.5" }]);
+    expect(result).toMatchObject({ budgetCapCents: 25000, goal, allowedMerchants: ["demo-store"] });
+    expect(result.mustHave).toEqual([{ key: "genre", op: "includes", value: "pop" }]);
     expect(result.minReturnDays).toBeGreaterThanOrEqual(14);
     expect(unsupported).toEqual([]);
   });
@@ -81,8 +81,8 @@ describe("intake model boundary", () => {
 
   it("moves rules the store can't check out of the contract, reports each one, and deduplicates", () => {
     const magic = { key: "magic", op: "eq" as const, value: "yes" };
-    const result = normalizeDraft({ ...draft, mustHave: [...draft.mustHave, draft.mustHave[0]!, { key: "sizes_available", op: "includes", value: "10.5" }, magic, magic] }, goal);
-    expect(result.draft.mustHave).toEqual([{ key: "width", op: "eq", value: "wide" }, { key: "sizes_available", op: "includes", value: "10.5" }]);
+    const result = normalizeDraft({ ...draft, mustHave: [...draft.mustHave, draft.mustHave[0]!, { key: "genre", op: "includes", value: "pop" }, magic, magic] }, goal);
+    expect(result.draft.mustHave).toEqual([{ key: "genre", op: "includes", value: "pop" }]);
     expect(result.unsupported).toEqual([magic]);
     expect(result.draft.question).toBeNull();
     expect(normalizeDraft(draft, "x".repeat(350)).draft.goal).toHaveLength(300);
@@ -105,21 +105,21 @@ describe("intake model boundary", () => {
 
   it("drops a deadline the goal never asked for, and keeps one it did", () => {
     expect(normalizeDraft({ ...draft, deadline: "2026-10-18" }, goal).draft).not.toHaveProperty("deadline");
-    for (const timed of ["wide shoes by Friday, under $140", "running shoes before 10/25", "shoes, need them next week", "shoes delivered in 3 days", "shoes by 2026-10-30"]) {
+    for (const timed of ["a pop musician by Friday, under 250 VU", "an actor before 10/25", "a tennis player, need it next week", "a musician delivered in 3 days", "an athlete by 2026-10-30"]) {
       expect(normalizeDraft({ ...draft, deadline: "2026-10-30" }, timed).draft.deadline).toBe("2026-10-30");
     }
-    expect(mentionsTiming("Running shoes for a half marathon, under $140, must be returnable")).toBe(false);
+    expect(mentionsTiming("An Oscar-winning actor, under 300 VU, must be refundable")).toBe(false);
   });
 
-  it("maps only exact shoe sizes; a size range is reported instead of narrowed to one size", () => {
-    expect(normalizeDraft({ ...draft, mustHave: [{ key: "size", op: "includes", value: "11" }] }, goal).draft.mustHave)
-      .toEqual([{ key: "sizes_available", op: "includes", value: "11" }]);
-    for (const op of ["gte", "lte"] as const) {
-      const range = { key: "size", op, value: 10 };
-      const result = normalizeDraft({ ...draft, mustHave: [range] }, goal);
-      expect(result.draft.mustHave).toEqual([]);
-      expect(result.unsupported).toEqual([range]);
-    }
+  it("checks a musician's genre as 'includes'; other categories' rules are kept as written", () => {
+    expect(normalizeDraft({ ...draft, mustHave: [{ key: "genre", op: "includes", value: "rock" }] }, goal).draft.mustHave)
+      .toEqual([{ key: "genre", op: "includes", value: "rock" }]);
+    expect(normalizeDraft({ ...draft, category: "athletes", mustHave: [{ key: "sport", op: "eq", value: "tennis" }] }, goal).draft.mustHave)
+      .toEqual([{ key: "sport", op: "eq", value: "tennis" }]);
+    expect(normalizeDraft({ ...draft, category: "actors", mustHave: [{ key: "oscar", op: "eq", value: "yes" }] }, goal).draft.mustHave)
+      .toEqual([{ key: "oscar", op: "eq", value: "yes" }]);
+    const elsewhere = { key: "genre", op: "eq" as const, value: "pop" };
+    expect(normalizeDraft({ ...draft, category: "actors", mustHave: [elsewhere] }, goal)).toMatchObject({ draft: { mustHave: [] }, unsupported: [elsewhere] });
   });
 
   it.each(["throw", "invalid-json", "schema", "unknown-field", "timeout"])("sanitizes %s failures", async (failure) => {
@@ -140,7 +140,7 @@ describe("intake model boundary", () => {
     for (const [line] of log.mock.calls) {
       expect(String(line)).toMatch(/^intake failed: /);
       expect(String(line)).not.toContain(goal);
-      expect(String(line)).not.toContain("half marathon");
+      expect(String(line)).not.toContain("for my collection");
     }
     const apiError = new APICallError({ message: "model: claude-nope not found", url: "https://api.anthropic.com/v1/messages", requestBodyValues: { goal }, statusCode: 404 });
     expect(describeIntakeError(apiError)).toBe("APICallError status 404: model: claude-nope not found");
@@ -148,7 +148,7 @@ describe("intake model boundary", () => {
   });
 
   it("sends only the specified context and gives the model no tools", async () => {
-    const profile: ProfileEntry = { id: randomUUID(), category: "running-shoes", key: "width", value: "wide", source: "user_edit", status: "confirmed", note: "private note", updatedAt: "2026-10-17" };
+    const profile: ProfileEntry = { id: randomUUID(), category: "musicians", key: "genre", value: "pop", source: "user_edit", status: "confirmed", note: "private note", updatedAt: "2026-10-17" };
     const model = modelReply();
     await runIntake({ ...input, profile: [profile] }, { model });
     expect(userMessage(model)).toEqual({ goal, today: input.today, allowedMerchants: ["demo-store"], confirmedProfile: [{ category: profile.category, key: profile.key, value: profile.value }], storeAttributes: STORE_ATTRIBUTES });
@@ -172,7 +172,7 @@ describe("intake model boundary", () => {
   it("stores drafts, filters confirmed profile, orders entries, and uses a UTC date", async () => {
     const db = openDb(":memory:");
     try {
-      const base: ProfileEntry = { id: randomUUID(), category: "running-shoes", key: "width", value: "wide", source: "user_edit", status: "confirmed", note: "private", updatedAt: "2026-10-16" };
+      const base: ProfileEntry = { id: randomUUID(), category: "musicians", key: "genre", value: "pop", source: "user_edit", status: "confirmed", note: "private", updatedAt: "2026-10-16" };
       const suggested = { ...base, id: randomUUID(), status: "suggested", updatedAt: "2026-10-15" };
       for (const entry of [base, suggested]) db.prepare("INSERT INTO profile_entries (id, json) VALUES (?, ?)").run(entry.id, JSON.stringify(entry));
       expect(listProfileEntries(db).map((entry) => entry.id)).toEqual([suggested.id, base.id]);
@@ -199,12 +199,6 @@ describe("intake model boundary", () => {
       for (const specifier of imports) expect(specifier).not.toMatch(/(?:^|\/)(?:sign|payments-client)(?:\.ts)?$|pipeline\/(?:verify|approve|cart)-stage/);
     }
   });
-});
-
-it.each(["groceries", "household"] as const)("keeps %s package-size rules during normalization", (category) => {
-  const rule = { key: "size", op: "eq" as const, value: "1 kg" };
-  const result = normalizeDraft({ ...draft, category, mustHave: [rule] }, goal);
-  expect(result.draft.mustHave).toEqual([rule]);
 });
 
 it("adds the unsupported column to a database created before it existed", () => {

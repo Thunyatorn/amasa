@@ -6,13 +6,13 @@ import type { Db } from "./index.ts";
 import { insertNotice } from "./notices.ts";
 
 const CATEGORY_WORDS: Record<ProfileEntry["category"], string> = {
-  "running-shoes": "running shoes", groceries: "groceries", household: "household", all: "all categories",
+  actors: "actors", musicians: "musicians", athletes: "athletes", all: "all categories",
 };
-// "running shoes size 11": how an entry is named in notices.
+// "musicians genre pop": how an entry is named in notices.
 export const describeEntry = (entry: ProfileEntry) => `${CATEGORY_WORDS[entry.category]} ${entry.key.replaceAll("_", " ")} ${entry.value}`;
 
 // A confirmed entry replaces any other confirmed entry with the same category and key, so the
-// profile never holds both "size 10.5" and "size 11". Each removal is audited.
+// profile never holds both "genre pop" and "genre rock". Each removal is audited.
 function replaceSameKey(db: Db, entry: ProfileEntry, now: string): ProfileEntry[] {
   const others = listProfileEntries(db).filter((other) => other.id !== entry.id && other.status === "confirmed"
     && other.category === entry.category && other.key === entry.key);

@@ -119,7 +119,7 @@ export default function ShopPage() {
   return <main className="screen wide">
     <p className="eyebrow">02 / Explore the possibilities</p>
     <h1>{running ? "Shopping for you" : result ? "Your options" : state.status === "cancelled" ? "Search stopped" : "Search didn't finish"}</h1>
-    <p className="subtitle">{running ? "Following your contract, one step at a time." : result ? "Consider the full cost, the fit and the trade-offs. The choice is yours." : "Your rules are still here. Continue when you're ready."}</p>
+    <p className="subtitle">{running ? "Following your contract, one step at a time." : result ? "Consider the full cost, the details and the trade-offs. The choice is yours." : "Your rules are still here. Continue when you're ready."}</p>
 
     <section className="card" aria-labelledby="contract-heading">
       <h2 id="contract-heading">Your contract</h2>
@@ -128,9 +128,9 @@ export default function ShopPage() {
       {contract && <>
         <p>{contract.contract.goal}</p>
         <ul className="contract-terms">
-          <li>Budget {money(contract.contract.budgetCapCents)}, including tax and shipping</li>
+          <li>Budget {money(contract.contract.budgetCapCents)}, including tax</li>
           <li>Quantity {contract.contract.quantity}</li>
-          <li>Returns: at least {contract.contract.minReturnDays} days</li>
+          <li>Refund window: at least {contract.contract.minReturnDays} days</li>
           {contract.contract.deadline && <li>Arrives by {contract.contract.deadline}</li>}
           {contract.contract.mustHave.map((rule) => <li key={`${rule.key}-${rule.op}-${rule.value}`}>{ruleLabel(rule)} {String(rule.value)}</li>)}
         </ul>

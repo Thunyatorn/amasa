@@ -15,7 +15,7 @@ export const MAX_SEARCHES = 3;
 // It adds no new rule: the §7.2 system prompt already says to call proposeCart with the candidates.
 export const PROPOSE_REMINDER = "Call proposeCart now with at most 3 options using only SKUs from the candidate list, or with an empty options list if none fits.";
 
-export type SurvivorForPlanner = PlannerListing & { readerFacts: Pick<ReaderFacts, "fitNotes" | "praise" | "complaints"> };
+export type SurvivorForPlanner = PlannerListing & { readerFacts: Pick<ReaderFacts, "praise" | "complaints"> };
 
 export class PlannerError extends Error {
   constructor(readonly code: "PLANNER_INVALID_SKU" | "PLANNER_FAILED") {

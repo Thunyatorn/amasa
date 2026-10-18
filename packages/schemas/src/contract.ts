@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 // SPEC §2.2.
-export const Category = z.enum(["running-shoes", "groceries", "household"]);
+export const Category = z.enum(["actors", "musicians", "athletes"]);
 export type Category = z.infer<typeof Category>;
 export const Sku = z.string().regex(/^[A-Z0-9-]{3,24}$/);
 export const AttrKey = z.string().regex(/^[a-z_]{1,24}$/);

@@ -16,3 +16,10 @@ next-env.d.ts
 dist/
 coverage/
 .DS_Store
+
+# Standalone celebrity asset tooling
+scripts/celebrities/.venv/
+scripts/celebrities/__pycache__/
+
+# Celebrity photos stay local until image rights are cleared (the app serves them from disk)
+data/celebrities/*.jpg

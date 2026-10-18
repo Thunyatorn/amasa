@@ -1,5 +1,6 @@
 import type { ProgressEvent } from "../../../lib/ui/sse.ts";
 import { filteredCount, REMOVED_WORDS, type ShopState } from "../../../lib/ui/shop-state.ts";
+import { CategoryIllustration, type ShoppingCategory } from "../../category-illustration.tsx";
 
 // Screen 4 (SPEC §16): no hooks here, so every piece renders the same in tests and in the app. All
 // text from models or the store is rendered as plain text.
@@ -36,20 +37,23 @@ function WhyPanel({ detail, id }: { detail: OptionsEvent["details"][number]; id:
   </div>;
 }
 
-export function OptionCards({ result, open, onToggle, now, onChoose, chooseDisabled = false }: {
+export function OptionCards({ result, open, onToggle, now, onChoose, chooseDisabled = false, category }: {
   result: OptionsEvent; open: ReadonlySet<number>; onToggle: (rank: number) => void; now: number;
   onChoose?: (rank: number) => void; chooseDisabled?: boolean;
+  category?: ShoppingCategory;
 }) {
   return <ol className="options">{result.options.map((option) => {
     const detail = result.details.find((d) => d.rank === option.rank);
     const products = detail?.products ?? [];
     const panelId = `why-${option.rank}`;
     return <li key={option.rank} className="option">
+      <div className="proposal-label"><span>Shopping proposal</span><span>0{option.rank}</span></div>
+      {category && <CategoryIllustration category={category} />}
       <h3>{option.rank}. {products.map((p) => p.title).join(" + ") || option.lines.map((l) => l.sku).join(" + ")}</h3>
-      {products.some((p) => p.sponsored) && <p className="sponsored">Sponsored</p>}
-      <p>{option.reason}</p>
+      <div className="option-disclosure">{products.some((p) => p.sponsored) && <p className="sponsored">Sponsored</p>}</div>
+      <p className="option-reason">{option.reason}</p>
+      <div className="option-total"><span className="price">{money(option.estimate.totalCents)}</span><span className="hint">Total · includes tax and shipping</span></div>
       <dl className="facts">
-        <div><dt>Total</dt><dd>{money(option.estimate.totalCents)}, includes tax and shipping</dd></div>
         <div><dt>Delivery</dt><dd>Arrives by {arrivalDate(option.estimate.deliveryDays, now)} ({days(option.estimate.deliveryDays)})</dd></div>
         <div><dt>Returns</dt><dd>{days(option.estimate.returnDays)}</dd></div>
         {products.map((p) => <div key={p.sku}><dt>Stock</dt><dd>Store says: {p.stock} in stock</dd></div>)}
@@ -67,7 +71,7 @@ export function CompareTableView({ result }: { result: OptionsEvent }) {
   const { compare } = result;
   if (compare.skus.length < 2) return null;
   const titles = compare.skus.map((sku) => result.details.flatMap((d) => d.products).find((p) => p.sku === sku)?.title ?? sku);
-  return <section aria-labelledby="compare-heading">
+  return <section className="comparison-section" aria-labelledby="compare-heading">
     <h2 id="compare-heading">Compare</h2>
     <div className="table-wrap"><table>
       <caption>Your options side by side. The row marked &quot;Biggest difference&quot; is where they differ most.</caption>

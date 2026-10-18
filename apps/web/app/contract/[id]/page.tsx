@@ -64,7 +64,8 @@ export default function ContractPage() {
     finally { pending.current = false; setBusy(false); }
   }
   const shoes = draft?.category === "running-shoes";
-  return <main className="screen"><h1 ref={heading} tabIndex={-1}>Review your contract</h1>
+  return <main className="screen"><p className="eyebrow">01 / Set the boundaries</p><h1 ref={heading} tabIndex={-1}>Review your contract</h1>
+    <p className="subtitle">Your goal, translated into clear shopping rules. Edit any detail before Amasa starts looking.</p>
     {loading && <p role="status">Loading your draft...</p>}
     {draft && fields && <>
       <p>{draft.goal}</p>

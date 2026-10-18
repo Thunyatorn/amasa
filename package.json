@@ -15,7 +15,12 @@
     "e2e:hardcoded": "pnpm --filter web e2e:hardcoded",
     "check:intake": "pnpm --filter web check:intake",
     "e2e:shop": "pnpm --filter web e2e:shop",
-    "e2e:m5": "pnpm --filter web e2e:m5"
+    "e2e:m5": "pnpm --filter web e2e:m5",
+    "market:seed": "pnpm --filter web market:seed",
+    "market:worker": "pnpm --filter web market:worker",
+    "market:refresh": "pnpm --filter web market:refresh",
+    "market:config": "pnpm --filter web market:config",
+    "market:simulate": "pnpm --filter web market:simulate"
   },
   "devDependencies": {
     "@types/node": "22.20.5",

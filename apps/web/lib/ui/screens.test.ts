@@ -99,10 +99,10 @@ describe("draft validation", () => {
   });
   it("rejects malformed successful API data", async () => { mockFetch({ draft: { nope: true } }); await expect(api("/api/drafts/example", DraftResult)).rejects.toThrow("read the response"); });
 });
-it("provides visible focus styles and AA text contrast in both themes", () => {
+it("provides visible focus styles and AA text contrast in the editorial theme", () => {
   const css = readFileSync(new URL("../../app/globals.css", import.meta.url), "utf8"); expect(css).toContain(":focus, :focus-visible"); expect(css).toContain("outline: 3px solid");
   const luminance = (hex: string) => { const channels = hex.match(/\w\w/g)!.map((part) => parseInt(part, 16) / 255).map((value) => value <= .04045 ? value / 12.92 : ((value + .055) / 1.055) ** 2.4); return channels[0]! * .2126 + channels[1]! * .7152 + channels[2]! * .0722; };
-  const themes = [...css.matchAll(/:root \{([^}]+)\}/g)]; expect(themes).toHaveLength(2);
+  const themes = [...css.matchAll(/:root \{([^}]+)\}/g)]; expect(themes).toHaveLength(1);
   for (const theme of themes) {
     const colors = Object.fromEntries([...theme[1]!.matchAll(/--([a-z-]+): #([a-f0-9]{6})/g)].map((match) => [match[1], match[2]]));
     for (const [foreground, background] of [["text", "surface"], ["muted", "surface"], ["accent", "surface"], ["button-text", "accent"]]) {
@@ -120,7 +120,7 @@ describe("M3 polish regressions", () => {
     const example = find(tree, (node) => node.props.className === "secondary");
     event(example, "onClick");
     tree = render(Home);
-    expect(find(tree, (node) => node.props.id === "goal").props.value).toBe(example.props.children);
+    expect(find(tree, (node) => node.props.id === "goal").props.value).toBe((example.props.children as Element[])[1]!.props.children);
     expect(focus).toHaveBeenCalledOnce();
     event(find(tree, (node) => node.props.id === "goal"), "onChange", "Shoes");
     expect(renderToStaticMarkup(render(Home) as never)).toContain("295 characters remaining");

@@ -67,10 +67,17 @@ describe("screen state", () => {
 });
 
 describe("screen 4 (SPEC §16)", () => {
+  it.each(["running-shoes", "groceries", "household"] as const)("labels %s artwork as a category illustration", (category) => {
+    const markup = html(createElement(OptionCards, { result: optionsEvent, category, open: new Set<number>(), onToggle: () => {}, now: NOW }));
+    expect(markup.match(/Category illustration/g)).toHaveLength(2);
+    expect(markup).toContain(`category-${category}`);
+    expect(markup).not.toContain("<img");
+  });
   it("option cards show the full total, delivery date, returns, store stock and the Sponsored label", () => {
     const markup = html(createElement(OptionCards, { result: optionsEvent, open: new Set<number>(), onToggle: () => {}, now: NOW }));
     expect(markup).toContain("1. Stride Wide Road Running Shoe");
-    expect(markup).toContain("$139.32, includes tax and shipping");
+    expect(markup).toContain('<span class="price">$139.32</span>');
+    expect(markup).toContain("Total · includes tax and shipping");
     expect(markup).toContain("Arrives by Wed, Oct 21 (3 days)");
     expect(markup).toContain("Store says: 12 in stock");
     expect(markup.match(/class="sponsored">Sponsored</g)).toHaveLength(1);

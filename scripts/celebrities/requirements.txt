@@ -1,0 +1,2 @@
+datasets>=3.6,<5
+Pillow>=11,<13

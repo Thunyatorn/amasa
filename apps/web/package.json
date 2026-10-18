@@ -11,7 +11,12 @@
     "e2e:hardcoded": "tsx scripts/e2e-hardcoded.ts",
     "check:intake": "node --env-file-if-exists=.env.local --import tsx scripts/intake-check.ts",
     "e2e:shop": "tsx scripts/e2e-shop.ts",
-    "e2e:m5": "tsx scripts/e2e-m5.ts"
+    "e2e:m5": "tsx scripts/e2e-m5.ts",
+    "market:seed": "node --import tsx scripts/market-seed.ts",
+    "market:worker": "node --env-file-if-exists=.env.local --import tsx scripts/market-worker.ts",
+    "market:refresh": "node --env-file-if-exists=.env.local --import tsx scripts/market-refresh.ts",
+    "market:config": "node --env-file-if-exists=.env.local --import tsx scripts/market-config.ts",
+    "market:simulate": "node --import tsx scripts/market-simulate.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "4.0.82",

@@ -117,7 +117,9 @@ export default function ShopPage() {
   const { result } = state;
 
   return <main className="screen wide">
+    <p className="eyebrow">02 / Explore the possibilities</p>
     <h1>{running ? "Shopping for you" : result ? "Your options" : state.status === "cancelled" ? "Search stopped" : "Search didn't finish"}</h1>
+    <p className="subtitle">{running ? "Following your contract, one step at a time." : result ? "Consider the full cost, the fit and the trade-offs. The choice is yours." : "Your rules are still here. Continue when you're ready."}</p>
 
     <section className="card" aria-labelledby="contract-heading">
       <h2 id="contract-heading">Your contract</h2>
@@ -154,7 +156,7 @@ export default function ShopPage() {
     {!selection && !ready && panelError && <p role="alert">{panelError}</p>}
     {result && (result.options.length
       ? <section aria-labelledby="options-heading"><h2 id="options-heading">Options</h2>
-          <OptionCards result={result} open={open} onToggle={toggle} now={now} onChoose={running ? undefined : choose} chooseDisabled={busy || !!selection || !!ready} /></section>
+          <OptionCards result={result} category={contract?.contract.category} open={open} onToggle={toggle} now={now} onChoose={running ? undefined : choose} chooseDisabled={busy || !!selection || !!ready} /></section>
       : <p>Nothing at demo-store fits your contract right now.</p>)}
     {result && <CompareTableView result={result} />}
     <FilteredOut state={state} />

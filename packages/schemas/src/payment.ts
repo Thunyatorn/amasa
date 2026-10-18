@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { sha256 } from "./canon.ts";
 import { Category, Sku } from "./contract.ts";
 
 // SPEC §2.9.
@@ -42,21 +41,3 @@ export const PaymentRequest = z.strictObject({
   shippingCents: z.number().int().min(0),
 });
 export type PaymentRequest = z.infer<typeof PaymentRequest>;
-
-export interface CartHashInput {
-  merchant: string;
-  currency: "USD";
-  lines: ReadonlyArray<{ sku: string; title: string; qty: number; unitCents: number }>;
-  taxCents: number;
-  shippingCents: number;
-}
-
-// SPEC §2.9: built from the quote by the web app and rebuilt from the PaymentRequest by the
-// payments service. Only these fields are hashed, so extra quote-line fields never leak in.
-export const cartHash = (c: CartHashInput) => sha256({
-  merchant: c.merchant,
-  currency: c.currency,
-  lines: c.lines.map((l) => ({ sku: l.sku, title: l.title, qty: l.qty, unitCents: l.unitCents })),
-  taxCents: c.taxCents,
-  shippingCents: c.shippingCents,
-});

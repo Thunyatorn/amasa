@@ -1,9 +1,10 @@
-// pnpm keys: generate the verifier Ed25519 key pair (SPEC §10.1).
+// pnpm keys: generate the verifier Ed25519 key pair (SPEC §10.1) and the web session secret.
 //   apps/web/.env.local     VERIFIER_PRIVATE_KEY_B64  (signs verdicts)
 //   services/payments/.env  VERIFIER_PUBLIC_KEY_B64   (checks verdicts)
+//   apps/web/.env.local     SESSION_SECRET            (signs the session cookie)
 // Appends only when a variable is not already set, and never prints key material.
 // Optional argument: the repo root (used by tests); defaults to this script's parent directory.
-import { generateKeyPairSync } from "node:crypto";
+import { generateKeyPairSync, randomBytes } from "node:crypto";
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -11,6 +12,7 @@ import { fileURLToPath } from "node:url";
 const root = resolve(process.argv[2] ?? join(dirname(fileURLToPath(import.meta.url)), ".."));
 const WEB = { file: join(root, "apps/web/.env.local"), name: "VERIFIER_PRIVATE_KEY_B64" };
 const PAY = { file: join(root, "services/payments/.env"), name: "VERIFIER_PUBLIC_KEY_B64" };
+const SESSION = { file: WEB.file, name: "SESSION_SECRET" };
 
 const pair = () => generateKeyPairSync("ed25519", {
   publicKeyEncoding: { type: "spki", format: "pem" },
@@ -59,4 +61,11 @@ if (webSet && paySet) {
   write(PAY, b64(v.publicKey));
   console.log(`Wrote ${WEB.name} to ${rel(WEB.file)}`);
   console.log(`Wrote ${PAY.name} to ${rel(PAY.file)}`);
+}
+
+if (isSet(read(SESSION.file), SESSION.name)) {
+  console.log(`${SESSION.name} already set in ${rel(SESSION.file)}; nothing to do.`);
+} else {
+  write(SESSION, randomBytes(32).toString("base64url"));
+  console.log(`Wrote ${SESSION.name} to ${rel(SESSION.file)}`);
 }

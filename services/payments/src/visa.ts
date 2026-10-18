@@ -1,4 +1,5 @@
 import { randomInt } from "node:crypto";
+import { z } from "zod";
 import type { VisaAcceptanceAgentToolkit } from "@visaacceptance/agent-toolkit/ai-sdk";
 
 type ToolkitModule = typeof import("@visaacceptance/agent-toolkit/ai-sdk");
@@ -75,4 +76,16 @@ export async function createLink(req: LinkRequest): Promise<unknown> {
   const result: unknown = JSON.parse(raw as string);
   if (typeof result === "string") throw new Error(result);
   return result;
+}
+
+// SPEC §20 item 1 (answered in M0): the link URL is purchaseInformation.paymentLink.
+// Not strict: the Visa response has many other fields; only this one is used.
+const LinkResponse = z.object({
+  purchaseInformation: z.object({ paymentLink: z.string().url().startsWith("https://") }),
+});
+
+export function extractLinkUrl(result: unknown): string {
+  const parsed = LinkResponse.safeParse(result);
+  if (!parsed.success) throw new Error("Visa response has no purchaseInformation.paymentLink");
+  return parsed.data.purchaseInformation.paymentLink;
 }

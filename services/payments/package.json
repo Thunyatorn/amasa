@@ -9,9 +9,13 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@visaacceptance/agent-toolkit": "0.0.96"
+    "@amasa/schemas": "workspace:*",
+    "@visaacceptance/agent-toolkit": "0.0.96",
+    "better-sqlite3": "13.0.3",
+    "zod": "3.25.76"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "9.6.0",
     "tsx": "4.23.15"
   }
 }

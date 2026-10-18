@@ -812,8 +812,14 @@ Rules (code in `apps/web/lib/autonomy.ts`):
 `purchases(purchase_number PK, cart_id, contract_id, category, status, total_cents, payment_link_url, created_at)`,
 `profile_entries(id, json)`, `autonomy(category PK, json)`, `audit(...)` (§13).
 
+Added in M2: `carts.quote_json` (the quote snapshot `/api/approve` needs to build `PaymentRequest`),
+`purchases.failure_codes` (a blocked row records its codes, §3), and
+`options(contract_id PK, json, flagged_json, created_at)`: the latest shopping run's options and
+flagged SKUs per contract, written by `/api/shop` (§7.4) and read by `/api/verify` for `flaggedSkus`.
+
 `services/payments` uses its own `data/payments.db`:
 `payments(purchase_number TEXT PRIMARY KEY, status TEXT, total_cents INTEGER, result_json TEXT, created_at TEXT)`.
+Statuses: `reserved`, `link_created`, `failed` (Visa error), `rejected` (a check after the reservation failed).
 
 Both `.db` files are git-ignored.
 
@@ -957,7 +963,9 @@ Model IDs are left blank on purpose: pick current ones from your provider's docu
 
 1. ~~Which field in the Visa payment-link response holds the link URL (§10.4).~~ Answered in M0:
    `purchaseInformation.paymentLink`.
-2. Whether tax and shipping belong as line items or only in `totalAmount` (§10.4).
+2. Whether tax and shipping belong as line items or only in `totalAmount` (§10.4). M2 finding: with
+   `totalAmount: "139.32"` and a "Tax" line item, Visa echoed `totalAmount: "129"`. Still open until
+   the amount on the hosted page is checked.
 3. Whether `get_payment_link` exposes a status that shows the link was paid (§3).
 4. Whether Visa mentors can grant Visa Intelligent Commerce sandbox access (would allow
    unattended level-2 payment; until then level 2 prepares a one-tap payment).

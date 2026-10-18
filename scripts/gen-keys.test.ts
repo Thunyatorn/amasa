@@ -27,6 +27,8 @@ describe("gen-keys", () => {
     expect(first.status).toBe(0);
 
     const priv = envValue(webEnv, "VERIFIER_PRIVATE_KEY_B64");
+    const session = envValue(webEnv, "SESSION_SECRET");
+    expect(session.length).toBeGreaterThanOrEqual(43); // 32 random bytes, base64url
     const pub = envValue(payEnv, "VERIFIER_PUBLIC_KEY_B64");
     expect(priv).not.toBe("");
     expect(pub).not.toBe("");
@@ -34,6 +36,7 @@ describe("gen-keys", () => {
     const out = first.stdout + first.stderr;
     expect(out).not.toContain(priv);
     expect(out).not.toContain(pub);
+    expect(out).not.toContain(session);
     expect(out).not.toMatch(/BEGIN|PRIVATE KEY|[A-Za-z0-9+/]{40,}/);
 
     // The pair loads as documented in §10.1 and signs/verifies.

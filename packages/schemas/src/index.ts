@@ -1,4 +1,5 @@
 export * from "./canon.ts";
+export * from "./cart-hash.ts";
 export * from "./contract.ts";
 export * from "./store.ts";
 export * from "./reader.ts";

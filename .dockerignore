@@ -1,0 +1,19 @@
+# Nothing secret and nothing personal goes into the image.
+.git
+.gitignore
+.DS_Store
+node_modules
+**/node_modules
+**/.next
+.pnpm-store
+**/*.tsbuildinfo
+**/.env
+**/.env.*
+!**/.env.example
+data/*.db
+data/*.db-*
+# The celebrity photos are not published; the deployed site shows initials placeholders.
+data/celebrities/*.jpg
+scripts/celebrities/.venv
+docs
+CLAUDE.md

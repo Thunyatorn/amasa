@@ -20,6 +20,7 @@
 - [Features](#-features)
 - [Security and testing](#-security-and-testing)
 - [Project structure](#-project-structure)
+- [Deploying to Fly.io](#-deploying-to-flyio)
 - [Roadmap](#-roadmap)
 - [Contributing](#-contributing)
 - [License](#-license)
@@ -261,6 +262,57 @@ docs/                SPEC.md (technical spec), BUILD_ORDER.md, BUILD_LOG.md, RED
 More detail: the technical spec is [`docs/SPEC.md`](docs/SPEC.md), the milestone-by-milestone record
 (what was built, measured and fixed) is [`docs/BUILD_LOG.md`](docs/BUILD_LOG.md), and the rules the
 code follows are in [`CLAUDE.md`](CLAUDE.md).
+
+---
+
+## 🚢 Deploying to Fly.io
+
+Amasa runs on **one Fly machine with one volume**: the web app and the payments service side by side, so
+payments stays loopback-only and the SQLite files persist. Don't scale past one machine (SQLite has one
+writer). Other hosts that give a container a persistent `/data` volume work too (see the `Dockerfile`).
+Vercel and Cloudflare Workers don't fit: they have no durable disk.
+
+What the deployment does differently:
+- **Password gate:** the whole site asks for one shared password (HTTP Basic, any user name). It is set
+  with the `DEMO_PASSWORD` secret. If it is missing on Fly, the site refuses to serve (503).
+- **No photos:** the celebrity photos are never put in the image. Cards show an initials placeholder.
+- **Seeds once:** the first boot loads the demo data; later boots keep your data.
+- **Prices stay at their starting values:** the market worker isn't started.
+
+Steps (you do these; never paste secrets into a chat or a file in the repo):
+
+```bash
+brew install flyctl
+fly auth login
+fly launch --no-deploy --copy-config      # keep fly.toml; pick a unique app name when asked
+fly volumes create amasa_data --size 1
+```
+
+Then set the secrets. `SESSION_SECRET` and `VERIFIER_PRIVATE_KEY_B64` (web app) and
+`VERIFIER_PUBLIC_KEY_B64` (payments) come from `pnpm keys` and must stay a matching pair:
+
+```bash
+fly secrets set \
+  SESSION_SECRET=... VERIFIER_PRIVATE_KEY_B64=... VERIFIER_PUBLIC_KEY_B64=... \
+  VISA_ACCEPTANCE_MERCHANT_ID=... VISA_ACCEPTANCE_API_KEY_ID=... VISA_ACCEPTANCE_SECRET_KEY=... \
+  ANTHROPIC_API_KEY=... DEMO_PASSWORD=...
+fly scale count 1
+fly deploy
+```
+
+Set a monthly spending cap in the Anthropic Console first: every search uses your key. `fly.toml` keeps
+`VISA_ACCEPTANCE_ENVIRONMENT=SANDBOX` and a $1,000 daily limit on payment links
+(`PAYMENTS_MAX_DAILY_CENTS`). Check it works: `fly logs` shows both services starting; open the site, enter
+the password, run one order to a Visa **sandbox** link.
+
+Test the image on your own machine first (Docker Desktop running; the throwaway password only matters
+for requests that carry Fly's headers, so add `-H 'fly-client-ip: 1.2.3.4'` to curl to see the gate):
+
+```bash
+docker build -t amasa-test .
+docker run --rm -p 13000:3000 -v amasa-test-data:/data -e DEMO_PASSWORD=test \
+  --env-file apps/web/.env.local --env-file services/payments/.env amasa-test
+```
 
 ---
 
